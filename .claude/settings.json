@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(bash render_slides.sh presentation.html ppt_test 3)",
+      "Bash(rm -rf \"/Volumes/zkj/personal/comfyui/知识主播/剧本/今年的趋势已经打明牌了 时代变太快/ppt_test\")",
+      "Bash(bash render_slides.sh presentation.html ppt 13)",
+      "Bash(mv \"/Volumes/zkj/personal/comfyui/知识主播/剧本/今年的趋势已经打明牌了 时代变太快/render_slides.sh\" \"/Volumes/zkj/personal/comfyui/知识主播/scripts/\")",
+      "Bash(open \"/Volumes/zkj/personal/comfyui/知识主播/剧本/今年的趋势已经打明牌了 时代变太快/今年的趋势已经打明牌了.html\")",
+      "Bash(find /Users/bigo/.claude -type d 2>/dev/null | head -20)",
+      "Read(//Users/bigo/.claude/**)",
+      "Bash(find /Users/bigo/.claude -type f -name \"*.md\" -o -name \"*.json\" -o -name \"*.yaml\" -o -name \"*.yml\" 2>/dev/null | head -30)",
+      "Bash(python3 -c ' *)",
+      "Bash(ffprobe -hide_banner -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 \"/Volumes/zkj/personal/comfyui/知识主播/剧本/今年的趋势已经打明牌了 时代变太快/语音.flac\")",
+      "Bash(node render_slides.cjs \"今年的趋势已经打明牌了.html\" ppt_new --slides=10 --width=1280 --height=720 --prefix=slide)"
+    ],
+    "additionalDirectories": [
+      "/Volumes/zkj/personal/comfyui/知识主播/剧本/今年的趋势已经打明牌了 时代变太快"
+    ]
+  }
+}

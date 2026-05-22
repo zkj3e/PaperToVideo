@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI 已经亮牌 — 赛博朋克</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #060816;
+  --panel: rgba(10,18,32,.82);
+  --cyan: #00e5ff;
+  --purple: #8b5cf6;
+  --pink: #ff2ea6;
+  --ink: #d8e7ff;
+  --muted: #6e7ea8;
+  --slide-w: 1280px;
+  --slide-h: 720px;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  background: radial-gradient(circle at 50% 30%, #17253d 0%, #060816 70%);
+  overflow: hidden;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Noto Sans SC', sans-serif;
+}
+
+/* 扫描线 */
+body::after {
+  content: '';
+  position: fixed; inset: 0;
+  pointer-events: none; opacity: .12;
+  background: repeating-linear-gradient(to bottom,
+    transparent 0px, transparent 2px,
+    rgba(255,255,255,.03) 3px);
+}
+
+/* 网格背景 */
+.grid-bg {
+  position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  background-image:
+    linear-gradient(rgba(0,229,255,.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,229,255,.04) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+.stage {
+  width: var(--slide-w); height: var(--slide-h);
+  position: relative; overflow: hidden;
+  z-index: 1;
+}
+
+/* ---- 幻灯片 ---- */
+.slide {
+  position: absolute; inset: 0;
+  padding: 64px 80px;
+  display: flex; flex-direction: column;
+  justify-content: center;
+  opacity: 0; pointer-events: none;
+  transition: opacity .45s ease;
+}
+.slide.active { opacity: 1; pointer-events: auto; }
+
+/* 渲染模式：hash 定位时直接显示对应slide */
+.export-mode .slide { opacity: 0 !important; pointer-events: none !important; }
+.export-mode .slide.target { opacity: 1 !important; }
+
+/* ---- 通用组件 ---- */
+.kicker {
+  color: var(--cyan); letter-spacing: 4px;
+  font-size: 13px; margin-bottom: 24px;
+  font-family: 'Orbitron', sans-serif;
+  text-transform: uppercase;
+}
+
+.display {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 72px; line-height: 1;
+  color: var(--cyan);
+  text-shadow: 0 0 12px rgba(0,229,255,.7), 0 0 32px rgba(0,229,255,.3);
+}
+
+.headline {
+  font-size: 40px; font-weight: 900; color: var(--ink);
+  line-height: 1.3; letter-spacing: 2px;
+}
+
+.subtitle {
+  margin-top: 28px; max-width: 900px;
+  color: var(--ink); font-size: 24px; line-height: 1.7; font-weight: 300;
+}
+
+.panel {
+  margin-top: 40px; padding: 32px 40px;
+  background: var(--panel);
+  border: 1px solid rgba(0,229,255,.2);
+  backdrop-filter: blur(12px);
+  box-shadow: inset 0 0 32px rgba(0,229,255,.05), 0 0 40px rgba(0,229,255,.06);
+  max-width: 960px;
+}
+
+.stat-row { display: flex; gap: 80px; align-items: flex-start; }
+.stat-col { flex: 1; }
+
+.big-num {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 110px; font-weight: 900; line-height: 1;
+  text-shadow: 0 0 16px rgba(255,46,166,.6), 0 0 40px rgba(255,46,166,.25);
+}
+.big-num.cyan  { color: var(--cyan);  text-shadow: 0 0 16px rgba(0,229,255,.6), 0 0 40px rgba(0,229,255,.25); }
+.big-num.pink  { color: var(--pink);  }
+.big-num.white { color: #fff; }
+
+.num-label { margin-top: 10px; color: var(--muted); font-size: 18px; line-height: 1.7; }
+
+.tag-row { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 20px; }
+.tag {
+  padding: 8px 20px; border: 1px solid rgba(0,229,255,.3);
+  color: var(--cyan); font-size: 15px; font-weight: 500;
+  background: rgba(0,229,255,.06);
+}
+
+.divider {
+  width: 60px; height: 3px;
+  background: var(--pink);
+  margin: 20px 0 24px;
+  box-shadow: 0 0 8px rgba(255,46,166,.5);
+}
+
+.vs-divider {
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 28px; color: var(--muted);
+  min-width: 50px;
+}
+
+.quote-block {
+  margin-top: 24px; padding-left: 20px;
+  border-left: 3px solid var(--cyan);
+  color: var(--ink); font-size: 20px; line-height: 1.7;
+  font-weight: 300;
+}
+
+/* 提示文字 */
+.hint {
+  position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%);
+  color: rgba(255,255,255,.18); font-size: 13px;
+  z-index: 10; pointer-events: none;
+  font-family: 'Noto Sans SC', sans-serif;
+}
+
+/* 角标装饰 */
+.corner-deco {
+  position: absolute; top: 20px; right: 28px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 11px; color: rgba(0,229,255,.25);
+  letter-spacing: 3px;
+}
+
+/* 脉冲圆点 */
+.pulse-dot {
+  display: inline-block; width: 8px; height: 8px;
+  border-radius: 50%; background: var(--pink);
+  box-shadow: 0 0 8px var(--pink);
+  margin-right: 8px;
+  animation: pulse 2s infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .3; }
+}
+
+/* 冰山下装饰 */
+.iceberg-viz {
+  margin-top: 30px; display: flex; flex-direction: column; align-items: center;
+  gap: 12px;
+}
+.iceberg-bar {
+  height: 8px; background: var(--cyan);
+  box-shadow: 0 0 12px rgba(0,229,255,.5);
+}
+</style>
+</head>
+<body>
+
+<div class="grid-bg"></div>
+
+<div class="stage" id="stage">
+
+  <!-- ===== slide 1 ===== -->
+  <section class="slide" id="slide-1">
+    <div class="corner-deco">01 / 08</div>
+    <div class="kicker"><span class="pulse-dot"></span> AI LABOR MARKET REPORT · ANTHROPIC 2026</div>
+    <div class="display">OBSERVED<br>EXPOSURE</div>
+    <div class="subtitle">不是 AI 能做什么，而是 AI 已经开始替代什么</div>
+    <div class="panel">
+      <div style="color:var(--cyan);font-size:15px;letter-spacing:2px;margin-bottom:16px;">计算机 & 数学领域</div>
+      <div class="stat-row">
+        <div class="stat-col" style="text-align:center;">
+          <div class="big-num cyan">94%</div>
+          <div class="num-label">理论能力覆盖</div>
+        </div>
+        <div class="vs-divider">/</div>
+        <div class="stat-col" style="text-align:center;">
+          <div class="big-num pink">33%</div>
+          <div class="num-label">实际暴露度</div>
+        </div>
+      </div>
+      <div style="margin-top:20px;color:var(--muted);font-size:16px;text-align:center;">差距不在能力，而在现实门槛 — 系统、权限、信任还没完全放行</div>
+    </div>
+  </section>
+
+  <!-- ===== slide 2 ===== -->
+  <section class="slide" id="slide-2">
+    <div class="corner-deco">02 / 08</div>
+    <div class="headline">卡住 AI 的，是<span style="color:var(--cyan);">权限</span>、<span style="color:var(--pink);">信任</span>和<span style="color:var(--purple);">签字权</span></div>
+    <div class="divider"></div>
+    <div class="subtitle">
+      系统没接入，权限不到位<br>
+      人还不完全信任 AI<br>
+      更关键的是 — <span style="color:var(--pink);">AI 不能背锅</span>
+    </div>
+    <div class="panel" style="margin-top:32px;">
+      <div style="display:flex;gap:60px;align-items:center;">
+        <div style="flex:1;text-align:center;">
+          <div style="font-size:48px;font-family:'Orbitron',sans-serif;color:var(--cyan);">AI</div>
+          <div style="color:var(--muted);margin-top:8px;">可以干活</div>
+        </div>
+        <div style="color:var(--muted);font-size:28px;">→</div>
+        <div style="flex:1;text-align:center;">
+          <div style="font-size:48px;font-weight:900;color:var(--ink);">签字</div>
+          <div style="color:var(--muted);margin-top:8px;">还是人来</div>
+        </div>
+      </div>
+    </div>
+    <div class="tag-row">
+      <div class="tag">权限锁</div>
+      <div class="tag">审批流</div>
+      <div class="tag">电子签章</div>
+      <div class="tag">责任归属</div>
+    </div>
+  </section>
+
+  <!-- ===== slide 3 ===== -->
+  <section class="slide" id="slide-3">
+    <div class="corner-deco">03 / 08</div>
+    <div class="headline">现在看到的，只是<span style="color:var(--cyan);">冰山一角</span></div>
+    <div class="divider"></div>
+    <div class="subtitle">
+      暴露度只是 AI 潜力露出水面的一小部分<br>
+      随着系统接入更深，信任和流程逐步建立<br>
+      <span style="color:var(--cyan);">这个比例还会继续扩大</span>
+    </div>
+    <div class="iceberg-viz" style="max-width:600px;">
+      <div class="iceberg-bar" style="width:120px;"></div>
+      <div style="color:var(--cyan);font-size:14px;">33% 暴露度 — 水面之上</div>
+      <div style="height:20px;"></div>
+      <div class="iceberg-bar" style="width:360px;opacity:.5;"></div>
+      <div style="color:var(--muted);font-size:14px;">94% 理论能力 — 水面之下</div>
+    </div>
+  </section>
+
+  <!-- ===== slide 4 ===== -->
+  <section class="slide" id="slide-4">
+    <div class="corner-deco">04 / 08</div>
+    <div class="headline">越<span style="color:var(--pink);">精英</span>，越先<span style="color:var(--pink);">承压</span></div>
+    <div class="divider"></div>
+    <div class="panel">
+      <div class="stat-row">
+        <div class="stat-col" style="text-align:center;">
+          <div class="big-num pink">4<span style="font-size:40px;">×</span></div>
+          <div class="num-label">研究生比例<br>是安全职业的 <b>4 倍</b></div>
+        </div>
+        <div class="stat-col" style="text-align:center;">
+          <div class="big-num cyan">$32.69</div>
+          <div class="num-label">平均时薪<br>比安全职业高 <b style="color:var(--pink);">47%</b></div>
+        </div>
+      </div>
+    </div>
+    <div class="quote-block">
+      成本越高，越容易被重新计算 — 企业降本增效，最先动刀的就是人力成本更高的人
+    </div>
+  </section>
+
+  <!-- ===== slide 5 ===== -->
+  <section class="slide" id="slide-5">
+    <div class="corner-deco">05 / 08</div>
+    <div class="headline">我见过一个<span style="color:var(--pink);">部门消失</span></div>
+    <div class="divider"></div>
+    <div class="subtitle">
+      德国慕尼黑 · 大公司 · <span style="color:var(--cyan);">Market Intelligence</span><br>
+      5 个研究生全职 + 2 个名校实习生
+    </div>
+    <div class="panel" style="margin-top:28px;text-align:center;">
+      <div style="font-size:22px;color:var(--muted);">
+        搜集信息 → 整理分析 → 写报告 → 发给产品和老板
+      </div>
+      <div style="margin-top:24px;font-size:28px;color:var(--pink);font-weight:700;">
+        现在这个部门没了<br>
+        <span style="font-size:20px;color:var(--ink);">工作全由 AI 接管，还干得比人好</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== slide 6 ===== -->
+  <section class="slide" id="slide-6">
+    <div class="corner-deco">06 / 08</div>
+    <div class="headline">白领<span style="color:var(--cyan);">基础活</span>正在被改写</div>
+    <div class="divider"></div>
+    <div class="tag-row">
+      <div class="tag">咨询</div>
+      <div class="tag">金融</div>
+      <div class="tag">市场研究</div>
+      <div class="tag">数据分析</div>
+      <div class="tag">法律助理</div>
+      <div class="tag">人力运营</div>
+      <div class="tag">客服</div>
+      <div class="tag">项目助理</div>
+    </div>
+    <div class="quote-block" style="margin-top:32px;">
+      这些工作的共同点：高度标准化的信息处理<br>
+      要求严谨、有逻辑、结构化表达<br>
+      <span style="color:var(--cyan);">恰恰是 AI 的天赋技能</span>
+    </div>
+  </section>
+
+  <!-- ===== slide 7 ===== -->
+  <section class="slide" id="slide-7">
+    <div class="corner-deco">07 / 08</div>
+    <div class="headline">年轻人的<span style="color:var(--pink);">入口变窄了</span></div>
+    <div class="divider"></div>
+    <div class="panel" style="text-align:center;">
+      <div class="big-num pink" style="font-size:130px;">−14%</div>
+      <div class="num-label" style="font-size:20px;">
+        AI 暴露度最高职业中，<b>22~25 岁</b>年轻人入职率<br>
+        近两年下降 <b style="color:var(--pink);">14%</b>
+      </div>
+    </div>
+    <div class="quote-block">
+      过去大厂招新人，因为总得有人干基础活 — 一种体力型脑力劳动<br>
+      现在这些活 AI 全会，还比新人更快更好<br>
+      <span style="color:var(--cyan);">不是不努力，是门变窄了</span>
+    </div>
+  </section>
+
+  <!-- ===== slide 8 ===== -->
+  <section class="slide" id="slide-8">
+    <div class="corner-deco">08 / 08</div>
+    <div class="headline">未来拼的是<span style="color:var(--cyan);">能力结构</span></div>
+    <div class="divider"></div>
+    <div class="subtitle">
+      关键不是选某职业或躲某职业<br>
+      而是重建自己的能力结构
+    </div>
+    <div class="panel" style="margin-top:32px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px 32px;">
+        <div><span style="color:var(--cyan);font-size:22px;">▸</span> 解决真实问题</div>
+        <div><span style="color:var(--cyan);font-size:22px;">▸</span> 敢于决策</div>
+        <div><span style="color:var(--cyan);font-size:22px;">▸</span> 审美与判断力</div>
+        <div><span style="color:var(--cyan);font-size:22px;">▸</span> 为结果负责</div>
+        <div><span style="color:var(--cyan);font-size:22px;">▸</span> 自主学习</div>
+        <div><span style="color:var(--cyan);font-size:22px;">▸</span> 好奇心</div>
+        <div style="grid-column:1/-1;text-align:center;margin-top:12px;">
+          <span style="font-family:'Orbitron',sans-serif;font-size:32px;color:var(--pink);letter-spacing:3px;">HIGH AGENCY</span>
+          <div style="color:var(--muted);margin-top:4px;">主观能动性</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<div class="hint" id="hint">点击任意位置翻页 · ← → 键盘翻页</div>
+
+<script>
+(function() {
+  var slides = document.querySelectorAll('.slide');
+  var total = slides.length;
+  var cur = 0;
+  var hint = document.getElementById('hint');
+  var stage = document.getElementById('stage');
+  var hash = window.location.hash;
+
+  // 导出/渲染模式：hash 定位单页，无交互
+  if (hash && /^#slide-\d+$/.test(hash)) {
+    document.body.classList.add('export-mode');
+    var target = document.querySelector(hash);
+    if (target) target.classList.add('target');
+    if (hint) hint.style.display = 'none';
+    return; // 不绑定交互
+  }
+
+  function show(idx) {
+    slides.forEach(function(s) { s.classList.remove('active'); });
+    slides[idx].classList.add('active');
+    cur = idx;
+    if (idx === total - 1) {
+      hint.textContent = '已到最后一页 · 点击回到首页';
+    } else {
+      hint.textContent = '点击任意位置翻页 · ← → 键盘翻页';
+    }
+  }
+
+  function next() { show((cur + 1) % total); }
+  function prev() { show((cur - 1 + total) % total); }
+
+  // 初始显示第一页
+  show(0);
+
+  // 键盘翻页
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { e.preventDefault(); next(); }
+    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   { e.preventDefault(); prev(); }
+  });
+
+  // 点击翻页（排除文本选择）
+  var mouseDown = false;
+  document.addEventListener('mousedown', function() { mouseDown = true; });
+  document.addEventListener('mouseup', function(e) {
+    if (!mouseDown) return;
+    mouseDown = false;
+    // 检查是否是文本选择拖拽
+    if (window.getSelection().toString().trim().length > 0) return;
+    next();
+  });
+
+  // 触摸翻页
+  var touchStartX = 0, touchStartY = 0;
+  document.addEventListener('touchstart', function(e) {
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+  }, {passive: true});
+  document.addEventListener('touchend', function(e) {
+    var dx = (e.changedTouches[0]||{}).clientX - touchStartX;
+    var dy = (e.changedTouches[0]||{}).clientY - touchStartY;
+    if (Math.abs(dx) < 10 && Math.abs(dy) < 10) next(); // tap
+    else if (dx < -40) next();
+    else if (dx > 40) prev();
+  });
+
+})();
+</script>
+
+</body>
+</html>

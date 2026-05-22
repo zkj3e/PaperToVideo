@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>诺贝尔奖得主承认：AI走错路了</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;700;900&display=swap');
+
+  :root {
+    --cyan: #00f0ff;
+    --magenta: #ff00ff;
+    --yellow: #ffd700;
+    --green: #00ff41;
+    --red: #ff3333;
+    --purple: #b347ea;
+    --bg: #0a0a0a;
+    --panel: #0d1117;
+    --border: #1a3a4a;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Noto Sans SC', 'Courier New', monospace;
+    background: var(--bg);
+    color: #c0c0c0;
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+    user-select: none;
+  }
+
+  /* Scanline overlay */
+  .scanlines {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: repeating-linear-gradient(
+      0deg,
+      rgba(0,0,0,0.15) 0px,
+      rgba(0,0,0,0.15) 1px,
+      transparent 1px,
+      transparent 3px
+    );
+    pointer-events: none;
+    z-index: 100;
+  }
+
+  /* Vignette */
+  .vignette {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: radial-gradient(ellipse at center, transparent 60%, rgba(0,0,0,0.7) 100%);
+    pointer-events: none;
+    z-index: 99;
+  }
+
+  /* Grid background */
+  .grid-bg {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background-image:
+      linear-gradient(rgba(0,240,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,240,255,0.03) 1px, transparent 1px);
+    background-size: 60px 60px;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  /* Main container */
+  .slides-container {
+    position: relative;
+    width: 100%; height: 100%;
+    z-index: 10;
+  }
+
+  .slide {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transform: scale(0.95);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+    pointer-events: none;
+    padding: 60px 80px;
+  }
+
+  .slide.active {
+    opacity: 1;
+    transform: scale(1);
+    pointer-events: all;
+    cursor: pointer;
+  }
+
+  /* Glitch text */
+  .glitch {
+    position: relative;
+    color: var(--cyan);
+    text-shadow: 0 0 10px rgba(0,240,255,0.5);
+  }
+
+  .glitch::before,
+  .glitch::after {
+    content: attr(data-text);
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+  }
+
+  .glitch::before {
+    color: var(--magenta);
+    animation: glitch-1 0.3s infinite linear alternate-reverse;
+    clip-path: polygon(0 0, 100% 0, 100% 45%, 0 45%);
+  }
+
+  .glitch::after {
+    color: var(--cyan);
+    animation: glitch-2 0.3s infinite linear alternate-reverse;
+    clip-path: polygon(0 55%, 100% 55%, 100% 100%, 0 100%);
+  }
+
+  @keyframes glitch-1 {
+    0% { transform: translate(0); }
+    100% { transform: translate(-3px, 2px); }
+  }
+  @keyframes glitch-2 {
+    0% { transform: translate(0); }
+    100% { transform: translate(3px, -2px); }
+  }
+
+  /* Title slide */
+  .title-card {
+    border: 2px solid var(--cyan);
+    padding: 60px 80px;
+    background: rgba(0,0,0,0.85);
+    box-shadow:
+      0 0 30px rgba(0,240,255,0.2),
+      inset 0 0 30px rgba(0,240,255,0.05);
+    text-align: center;
+    max-width: 850px;
+    position: relative;
+  }
+
+  .title-card::before {
+    content: '';
+    position: absolute;
+    top: -2px; left: 20px; right: 20px;
+    height: 2px;
+    background: var(--magenta);
+    box-shadow: 0 0 15px var(--magenta);
+  }
+
+  .title-card .subtitle {
+    color: var(--magenta);
+    font-size: 18px;
+    letter-spacing: 8px;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+  }
+
+  .title-card h1 {
+    font-size: 42px;
+    font-weight: 900;
+    color: var(--cyan);
+    line-height: 1.3;
+    margin-bottom: 15px;
+  }
+
+  .title-card .tag {
+    display: inline-block;
+    border: 1px solid var(--yellow);
+    color: var(--yellow);
+    padding: 6px 20px;
+    font-size: 14px;
+    letter-spacing: 4px;
+    margin-top: 20px;
+  }
+
+  .corner-deco {
+    position: absolute;
+    width: 20px; height: 20px;
+    border-color: var(--cyan);
+    border-style: solid;
+  }
+  .corner-deco.tl { top: -2px; left: -2px; border-width: 3px 0 0 3px; }
+  .corner-deco.tr { top: -2px; right: -2px; border-width: 3px 3px 0 0; }
+  .corner-deco.bl { bottom: -2px; left: -2px; border-width: 0 0 3px 3px; }
+  .corner-deco.br { bottom: -2px; right: -2px; border-width: 0 3px 3px 0; }
+
+  /* Content slides */
+  .content-card {
+    border: 1px solid var(--border);
+    background: rgba(13,17,23,0.92);
+    padding: 50px 60px;
+    max-width: 900px;
+    width: 100%;
+    position: relative;
+    box-shadow: 0 0 40px rgba(0,0,0,0.5);
+  }
+
+  .content-card .section-label {
+    color: var(--magenta);
+    font-size: 12px;
+    letter-spacing: 6px;
+    text-transform: uppercase;
+    margin-bottom: 25px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(255,0,255,0.3);
+  }
+
+  .content-card h2 {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--cyan);
+    margin-bottom: 30px;
+    line-height: 1.4;
+  }
+
+  .content-card .quote {
+    border-left: 3px solid var(--magenta);
+    padding: 15px 25px;
+    margin: 20px 0;
+    background: rgba(255,0,255,0.05);
+    font-size: 20px;
+    color: #ddd;
+    line-height: 1.6;
+    font-style: italic;
+  }
+
+  .content-card .stats {
+    display: flex;
+    gap: 30px;
+    justify-content: center;
+    margin: 25px 0;
+    flex-wrap: wrap;
+  }
+
+  .stat-item {
+    text-align: center;
+    padding: 20px 25px;
+    border: 1px solid rgba(0,240,255,0.3);
+    background: rgba(0,0,0,0.4);
+  }
+
+  .stat-item .num {
+    font-size: 48px;
+    font-weight: 900;
+    color: var(--red);
+    text-shadow: 0 0 20px rgba(255,51,51,0.5);
+    line-height: 1;
+  }
+
+  .stat-item .label {
+    color: #888;
+    font-size: 13px;
+    margin-top: 8px;
+    letter-spacing: 2px;
+  }
+
+  .content-card .point {
+    display: flex;
+    align-items: flex-start;
+    gap: 15px;
+    margin: 12px 0;
+    font-size: 18px;
+    line-height: 1.6;
+  }
+
+  .point .bullet {
+    color: var(--cyan);
+    font-weight: bold;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .highlight { color: var(--yellow); font-weight: bold; }
+  .accent { color: var(--magenta); font-weight: bold; }
+  .danger { color: var(--red); font-weight: bold; }
+
+  /* Timeline */
+  .timeline {
+    display: flex;
+    gap: 40px;
+    margin: 30px 0;
+    justify-content: center;
+  }
+  .timeline-item {
+    text-align: center;
+    position: relative;
+  }
+  .timeline-item .year {
+    font-size: 36px;
+    font-weight: 900;
+    color: var(--cyan);
+  }
+  .timeline-item .desc {
+    font-size: 14px;
+    color: #999;
+    margin-top: 5px;
+    max-width: 200px;
+  }
+  .timeline-divider {
+    width: 60px;
+    height: 1px;
+    background: var(--cyan);
+    align-self: center;
+    margin-bottom: 20px;
+  }
+
+  /* Final slide */
+  .final-quote {
+    font-size: 28px;
+    color: var(--yellow);
+    text-align: center;
+    line-height: 1.6;
+    font-weight: 300;
+    max-width: 750px;
+  }
+
+  .final-quote strong {
+    color: var(--cyan);
+    font-weight: 900;
+  }
+
+  /* Particle effects */
+  .particle {
+    position: fixed;
+    pointer-events: none;
+    z-index: 5;
+    font-size: 12px;
+    color: var(--cyan);
+    opacity: 0.3;
+    animation: float linear infinite;
+  }
+
+  @keyframes float {
+    0% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
+    10% { opacity: 0.3; }
+    90% { opacity: 0.3; }
+    100% { transform: translateY(-100vh) rotate(720deg); opacity: 0; }
+  }
+
+  /* Top bar */
+  .top-bar {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%;
+    padding: 15px 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 200;
+    pointer-events: none;
+  }
+
+  .top-bar .status {
+    color: var(--green);
+    font-size: 11px;
+    letter-spacing: 3px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .status-dot {
+    width: 6px; height: 6px;
+    background: var(--green);
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; box-shadow: 0 0 5px var(--green); }
+    50% { opacity: 0.3; box-shadow: 0 0 1px var(--green); }
+  }
+
+  /* Click hint */
+  .click-hint {
+    position: fixed;
+    bottom: 40px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: rgba(0,240,255,0.25);
+    font-size: 11px;
+    letter-spacing: 3px;
+    z-index: 200;
+    pointer-events: none;
+    transition: opacity 0.3s;
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .slide { padding: 30px; }
+    .title-card { padding: 40px 30px; }
+    .title-card h1 { font-size: 28px; }
+    .content-card { padding: 30px 25px; }
+    .content-card h2 { font-size: 24px; }
+    .stats { gap: 15px; }
+    .stat-item .num { font-size: 36px; }
+    .timeline { gap: 20px; }
+    .timeline-item .year { font-size: 24px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="scanlines"></div>
+<div class="vignette"></div>
+<div class="grid-bg"></div>
+
+<div class="top-bar">
+  <div class="status">
+    <span class="status-dot"></span>
+    SYS::ONLINE
+  </div>
+  <div style="color:#444;font-size:11px;letter-spacing:3px;">NEURAL LINK ESTABLISHED</div>
+</div>
+
+<div class="slides-container" id="slidesContainer">
+
+  <!-- Slide 0: Title -->
+  <div class="slide active">
+    <div class="title-card">
+      <div class="corner-deco tl"></div>
+      <div class="corner-deco tr"></div>
+      <div class="corner-deco bl"></div>
+      <div class="corner-deco br"></div>
+      <div class="subtitle">[ 诺贝尔奖得主亲口承认 ]</div>
+      <h1 class="glitch" data-text="AI走错路了">AI走错路了</h1>
+      <div style="font-size:22px;color:#ccc;margin-top:10px;">而普通人正在买单</div>
+      <div class="tag">DEMIS HASSABIS · 2025</div>
+      <div style="margin-top:30px;color:#666;font-size:13px;">
+        "AI应该在实验室里多待10到20年"
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 1: AlphaFold -->
+  <div class="slide" data-index="1">
+    <div class="content-card">
+      <div class="section-label">▸ 01 / 科学本该走的路</div>
+      <h2>AlphaFold：从<span class="highlight">几年</span>到<span class="highlight">几秒钟</span></h2>
+      <div class="stats">
+        <div class="stat-item">
+          <div class="num">50年</div>
+          <div class="label">过去搞清一个蛋白质结构</div>
+        </div>
+        <div class="stat-item">
+          <div class="num">10秒</div>
+          <div class="label">AlphaFold 折叠一个蛋白质</div>
+        </div>
+        <div class="stat-item">
+          <div class="num">2亿</div>
+          <div class="label">一年内可算完的蛋白质</div>
+        </div>
+      </div>
+      <div class="quote">
+        "这不是简单提速了，这是直接给它换了一条路。"
+      </div>
+      <div class="point">
+        <span class="bullet">▸</span>
+        <span>全球 <span class="highlight">300万科学家</span> 免费使用 AlphaFold 数据库</span>
+      </div>
+      <div class="point">
+        <span class="bullet">▸</span>
+        <span><span class="highlight">几十种</span> 相关药物已进入临床试验</span>
+      </div>
+      <div class="point">
+        <span class="bullet">▸</span>
+        <span>蛋白质折叠错误 → 癌症、白血病、阿尔兹海默症</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 2: The Pivot -->
+  <div class="slide" data-index="2">
+    <div class="content-card">
+      <div class="section-label">▸ 02 / 转折点</div>
+      <h2>2022年11月30日，<span class="danger">一切偏离了轨道</span></h2>
+      <div class="timeline">
+        <div class="timeline-item">
+          <div class="year">2020</div>
+          <div class="desc">AlphaFold 破解蛋白质折叠难题</div>
+        </div>
+        <div class="timeline-divider"></div>
+        <div class="timeline-item">
+          <div class="year" style="color:var(--red);">2022.11</div>
+          <div class="desc">ChatGPT 横空出世，AI行业重心一夜转向</div>
+        </div>
+        <div class="timeline-divider"></div>
+        <div class="timeline-item">
+          <div class="year">2023→</div>
+          <div class="desc">全行业大模型军备竞赛</div>
+        </div>
+      </div>
+      <div class="quote">
+        "哈萨比斯从一个专注做科学的实验室负责人，变成了谷歌的AI掌舵者。"
+      </div>
+      <div class="point">
+        <span class="bullet">▸</span>
+        <span>谷歌拉响<span class="danger">红色警报</span>，科学让位于商业竞争</span>
+      </div>
+      <div class="point">
+        <span class="bullet">▸</span>
+        <span>哈萨比斯：<span class="accent">"现在不是他想要的AI"</span></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 3: The Cost -->
+  <div class="slide" data-index="3">
+    <div class="content-card">
+      <div class="section-label">▸ 03 / 普通人在买单</div>
+      <h2>AI 军备竞赛的<span class="danger">真正代价</span></h2>
+      <div class="stats">
+        <div class="stat-item">
+          <div class="num">10万+</div>
+          <div class="label">2025年科技行业裁员</div>
+        </div>
+        <div class="stat-item">
+          <div class="num">3万</div>
+          <div class="label">谷歌裁员</div>
+        </div>
+        <div class="stat-item">
+          <div class="num">1.6万</div>
+          <div class="label">亚马逊裁员</div>
+        </div>
+      </div>
+      <div class="quote">
+        "一个本来可以治愈癌症、发现新材料的工具，现在被迫先去帮企业降本增效了。"
+      </div>
+      <div class="point">
+        <span class="bullet">▸</span>
+        <span>现在的AI公司都在卷：<span class="danger">谁的模型能帮老板裁掉更多的人</span></span>
+      </div>
+      <div class="point">
+        <span class="bullet">▸</span>
+        <span>50%以上的裁员都与AI直接相关</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 4: The Alternative -->
+  <div class="slide" data-index="4">
+    <div class="content-card">
+      <div class="section-label">▸ 04 / 另一条路</div>
+      <h2>哈萨比斯想要的：<span class="highlight">CERN模式</span></h2>
+      <div class="quote">
+        "全球最顶尖的科学家一起合作，每走一步都把原理和后果讲清楚，充分验证。哪怕慢十年二十年，也比现在这种一路狂奔更稳。"
+      </div>
+      <div class="point">
+        <span class="bullet">▸</span>
+        <span>成立AI制药公司，<span class="highlight">18-19个药物项目</span>推进中</span>
+      </div>
+      <div class="point">
+        <span class="bullet">▸</span>
+        <span>覆盖：<span class="accent">心脏病 · 癌症 · 免疫疾病</span></span>
+      </div>
+      <div class="point">
+        <span class="bullet">▸</span>
+        <span>将<span class="highlight">10年研发、90%失败率、几十亿成本</span>的药物流程彻底重做</span>
+      </div>
+      <div class="point">
+        <span class="bullet">▸</span>
+        <span>破解人类基因密码 + CRISPR = <span class="accent">精准修复遗传突变</span></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 5: The Future -->
+  <div class="slide" data-index="5">
+    <div class="content-card">
+      <div class="section-label">▸ 05 / 如果AI走对路</div>
+      <h2>未来50年，AI<span class="highlight">本可以</span>带来的</h2>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin:25px 0;">
+        <div style="border:1px solid rgba(0,240,255,0.2);padding:25px;text-align:center;">
+          <div style="font-size:36px;margin-bottom:10px;">⚡</div>
+          <div style="color:var(--cyan);font-size:18px;">可控核聚变</div>
+        </div>
+        <div style="border:1px solid rgba(255,0,255,0.2);padding:25px;text-align:center;">
+          <div style="font-size:36px;margin-bottom:10px;">💊</div>
+          <div style="color:var(--magenta);font-size:18px;">治愈疾病</div>
+        </div>
+        <div style="border:1px solid rgba(0,240,255,0.2);padding:25px;text-align:center;">
+          <div style="font-size:36px;margin-bottom:10px;">🌊</div>
+          <div style="color:var(--cyan);font-size:18px;">解决粮食与水危机</div>
+        </div>
+        <div style="border:1px solid rgba(255,0,255,0.2);padding:25px;text-align:center;">
+          <div style="font-size:36px;margin-bottom:10px;">🚀</div>
+          <div style="color:var(--magenta);font-size:18px;">星际旅行</div>
+        </div>
+      </div>
+      <div class="quote" style="text-align:center;border:none;">
+        这一切的前提是：<span class="danger">AI必须走到正确的路上</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Slide 6: Final -->
+  <div class="slide" data-index="6">
+    <div class="content-card" style="text-align:center;">
+      <div class="section-label">▸ 06 / 尾声</div>
+      <div class="final-quote">
+        <p>2016年，他桌上贴着一张便签：</p>
+        <p style="color:var(--cyan);font-size:36px;margin:20px 0;">"解决蛋白质折叠问题"</p>
+        <p style="margin-top:30px;">现在，他桌上贴满了<span class="highlight">上百张便签</span></p>
+        <p style="color:#999;font-size:18px;">上面写的是——今晚必须要做完的三十件事</p>
+        <div class="quote" style="border:none;margin-top:40px;">
+          一个纯粹的科学家，<span class="danger">他已经不能决定自己做什么了</span>
+        </div>
+        <div class="quote" style="border:none;">
+          这个最懂AI应该往哪个方向走的人，<br>
+          <span class="danger">他已经没有权利决定AI的方向</span>
+        </div>
+        <div style="margin-top:40px;color:#666;font-size:14px;letter-spacing:3px;">
+          现在能决定AI方向的是资本和市场<br>
+          而他们最关心的还是——怎么赚更多的钱
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="click-hint" id="clickHint">点击任意位置翻页 · ← → 键切换</div>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  const total = slides.length;
+  let current = 0;
+  const hint = document.getElementById('clickHint');
+
+  function goTo(index) {
+    if (index === current) return;
+    slides[current].classList.remove('active');
+    current = index;
+    slides[current].classList.add('active');
+    if (current === total - 1) {
+      hint.style.opacity = '0';
+      hint.textContent = '已到最后一页 · 点击回到首页';
+    } else {
+      hint.style.opacity = '1';
+      hint.textContent = '点击任意位置翻页 · ← → 键切换';
+    }
+  }
+
+  function nextSlide() {
+    if (current === total - 1) goTo(0);
+    else goTo(current + 1);
+  }
+
+  function prevSlide() { goTo((current - 1 + total) % total); }
+
+  // Click anywhere to advance
+  document.addEventListener('click', e => nextSlide());
+
+  // Keyboard navigation
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight') nextSlide();
+    if (e.key === 'ArrowLeft') prevSlide();
+  });
+
+  // Floating particles
+  const chars = '01アイウエオカキクケコ';
+  function createParticle() {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    p.textContent = chars[Math.floor(Math.random() * chars.length)];
+    p.style.left = Math.random() * 100 + '%';
+    p.style.animationDuration = (Math.random() * 15 + 10) + 's';
+    p.style.fontSize = (Math.random() * 16 + 8) + 'px';
+    document.body.appendChild(p);
+    p.addEventListener('animationend', () => p.remove());
+  }
+  setInterval(createParticle, 2000);
+  for (let i = 0; i < 15; i++) {
+    setTimeout(createParticle, Math.random() * 5000);
+  }
+</script>
+
+</body>
+</html>

@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+<title>Newspaper Style Presentation</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&family=Noto+Serif+SC:wght@400;700;900&display=swap" rel="stylesheet">
+
+<style>
+
+:root {
+
+  /* ===== Colors ===== */
+
+  --bg: #f4efe6;
+  --paper: #fffdf8;
+  --ink: #191919;
+  --muted: #7c7468;
+  --line: #d7d0c2;
+  --accent: #c62828;
+
+  /* ===== Typography ===== */
+
+  --font-serif: 'Noto Serif SC', serif;
+  --font-sans: 'Noto Sans SC', sans-serif;
+
+  --display: 92px;
+  --headline: 56px;
+  --title: 34px;
+  --body: 18px;
+  --small: 14px;
+
+  /* ===== Spacing ===== */
+
+  --space-xl: 80px;
+  --space-lg: 48px;
+  --space-md: 24px;
+  --space-sm: 12px;
+
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+
+  background: #e9e2d7;
+
+  font-family: var(--font-serif);
+
+  overflow: hidden;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 100vw;
+  height: 100vh;
+}
+
+/* ===== Paper Texture ===== */
+
+body::before {
+
+  content: '';
+
+  position: fixed;
+  inset: 0;
+
+  pointer-events: none;
+
+  opacity: .06;
+
+  background-image:
+    radial-gradient(circle at 20% 20%, rgba(0,0,0,.35) .5px, transparent .5px);
+
+  background-size: 6px 6px;
+
+  mix-blend-mode: multiply;
+}
+
+/* ===== Stage ===== */
+
+.stage {
+
+  width: 1920px;
+  height: 1080px;
+
+  background: var(--bg);
+
+  overflow: hidden;
+
+  position: relative;
+
+  transform-origin: center center;
+}
+
+/* ===== Slide ===== */
+
+.slide {
+
+  position: absolute;
+  inset: 0;
+
+  padding: 72px 88px;
+
+  display: none;
+  flex-direction: column;
+
+  background: var(--bg);
+}
+
+.slide.active {
+  display: flex;
+}
+
+/* ===== Grid ===== */
+
+.grid {
+
+  display: grid;
+
+  grid-template-columns: repeat(12, 1fr);
+
+  gap: 32px;
+
+  width: 100%;
+  height: 100%;
+}
+
+.col-12 { grid-column: span 12; }
+.col-8  { grid-column: span 8; }
+.col-6  { grid-column: span 6; }
+.col-4  { grid-column: span 4; }
+
+/* ===== Typography ===== */
+
+.kicker {
+
+  font-family: var(--font-sans);
+
+  font-size: 13px;
+
+  letter-spacing: 4px;
+
+  text-transform: uppercase;
+
+  font-weight: 700;
+
+  color: var(--accent);
+}
+
+.display {
+
+  font-size: var(--display);
+
+  line-height: .92;
+
+  font-weight: 900;
+
+  color: var(--ink);
+}
+
+.headline {
+
+  font-size: var(--headline);
+
+  line-height: 1.05;
+
+  font-weight: 900;
+
+  color: var(--ink);
+}
+
+.title {
+
+  font-size: var(--title);
+
+  line-height: 1.2;
+
+  font-weight: 700;
+}
+
+.body {
+
+  font-size: var(--body);
+
+  line-height: 1.9;
+
+  color: #2b2b2b;
+}
+
+.small {
+
+  font-size: var(--small);
+}
+
+.sans {
+  font-family: var(--font-sans);
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.accent {
+  color: var(--accent);
+}
+
+/* ===== Lines ===== */
+
+.hairline {
+
+  width: 100%;
+
+  height: 1px;
+
+  background: var(--line);
+}
+
+.hairline.thick {
+
+  height: 3px;
+
+  background: var(--ink);
+}
+
+/* ===== Cards ===== */
+
+.card {
+
+  background: rgba(255,255,255,.75);
+
+  border: 1px solid var(--line);
+
+  padding: 32px;
+
+  backdrop-filter: blur(4px);
+}
+
+.stat-card {
+
+  background: var(--paper);
+
+  border: 1px solid var(--line);
+
+  padding: 42px 36px;
+}
+
+.stat-number {
+
+  font-size: 96px;
+
+  line-height: .9;
+
+  font-weight: 900;
+
+  color: var(--accent);
+}
+
+.stat-label {
+
+  margin-top: 18px;
+
+  font-size: 16px;
+
+  line-height: 1.6;
+
+  color: var(--muted);
+
+  font-family: var(--font-sans);
+}
+
+/* ===== Quote ===== */
+
+.quote {
+
+  border-left: 4px solid var(--accent);
+
+  padding-left: 24px;
+
+  font-size: 24px;
+
+  line-height: 1.7;
+
+  font-weight: 700;
+}
+
+/* ===== Tags ===== */
+
+.tag-row {
+
+  display: flex;
+
+  flex-wrap: wrap;
+
+  gap: 12px;
+}
+
+.tag {
+
+  padding: 8px 18px;
+
+  border: 1px solid var(--line);
+
+  background: rgba(255,255,255,.8);
+
+  font-family: var(--font-sans);
+
+  font-size: 14px;
+}
+
+.tag.red {
+
+  border-color: var(--accent);
+
+  color: var(--accent);
+}
+
+/* ===== Reveal Animation ===== */
+
+.reveal {
+
+  opacity: 0;
+
+  transform: translateY(18px);
+
+  transition:
+    opacity .7s ease,
+    transform .7s ease;
+}
+
+.slide.active .reveal {
+
+  opacity: 1;
+
+  transform: translateY(0);
+}
+
+.d1 { transition-delay: .1s; }
+.d2 { transition-delay: .25s; }
+.d3 { transition-delay: .4s; }
+.d4 { transition-delay: .55s; }
+.d5 { transition-delay: .7s; }
+
+/* ===== Footer ===== */
+
+.footer {
+
+  margin-top: auto;
+
+  padding-top: 18px;
+
+  border-top: 1px solid var(--line);
+
+  display: flex;
+
+  justify-content: space-between;
+
+  align-items: center;
+
+  font-family: var(--font-sans);
+
+  font-size: 13px;
+
+  color: var(--muted);
+
+  letter-spacing: 2px;
+}
+
+.page {
+
+  color: var(--accent);
+
+  font-weight: 700;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="stage" id="stage">
+
+  <!-- ===== Slide 1 ===== -->
+
+  <section class="slide active">
+
+    <div class="grid">
+
+      <div class="col-12 reveal d1">
+        <div class="kicker">
+          SPECIAL REPORT · 2026
+        </div>
+      </div>
+
+      <div class="col-12 reveal d2">
+        <div class="hairline thick" style="width:420px;"></div>
+      </div>
+
+      <div class="col-8 reveal d3">
+
+        <div class="display">
+          AI 对劳动力<br>
+          市场的影响
+        </div>
+
+      </div>
+
+      <div class="col-4 reveal d4" style="align-self:end;">
+
+        <div class="title accent">
+
+          观察到的暴露度：
+          不是 AI 能做什么，
+          而是 AI 已经在做什么
+
+        </div>
+
+      </div>
+
+      <div class="col-6 reveal d5">
+
+        <div class="body">
+
+          以前多数 AI 报告讨论的是：
+          假如 AI 火力全开，未来会怎样？
+
+          这像是在评估一个尖子生的最大潜力。
+
+        </div>
+
+      </div>
+
+      <div class="col-6 reveal d5">
+
+        <div class="body muted">
+
+          Anthropic 的报告讨论的是：
+          此时此刻，到底有多少工作，
+          已经被 AI 真实接手。
+
+        </div>
+
+      </div>
+
+    </div>
+
+    <div class="footer">
+
+      <div>
+        FT WEEKEND STYLE · NEWSPAPER TEMPLATE
+      </div>
+
+      <div>
+        <span class="page">1</span> / 3
+      </div>
+
+    </div>
+
+  </section>
+
+  <!-- ===== Slide 2 ===== -->
+
+  <section class="slide">
+
+    <div class="grid">
+
+      <div class="col-12 reveal d1">
+
+        <div class="headline">
+          理论覆盖 · 实际暴露
+        </div>
+
+      </div>
+
+      <div class="col-6 reveal d2">
+
+        <div class="stat-card">
+
+          <div class="stat-number">
+            94%
+          </div>
+
+          <div class="stat-label">
+
+            AI 理论能力覆盖
+            <br>
+            计算机 / 数学领域
+
+          </div>
+
+        </div>
+
+      </div>
+
+      <div class="col-6 reveal d3">
+
+        <div class="stat-card">
+
+          <div class="stat-number">
+            33%
+          </div>
+
+          <div class="stat-label">
+
+            实际观察到的暴露度
+            <br>
+            真实工作场景
+
+          </div>
+
+        </div>
+
+      </div>
+
+      <div class="col-12 reveal d4">
+
+        <div class="quote">
+
+          差值不是 AI 不够强，
+          而是现实系统还没完全放行。
+
+        </div>
+
+      </div>
+
+    </div>
+
+    <div class="footer">
+
+      <div>
+        DATA ANALYSIS · OBSERVED EXPOSURE
+      </div>
+
+      <div>
+        <span class="page">2</span> / 3
+      </div>
+
+    </div>
+
+  </section>
+
+  <!-- ===== Slide 3 ===== -->
+
+  <section class="slide">
+
+    <div class="grid">
+
+      <div class="col-6 reveal d1">
+
+        <div class="headline">
+          AI 的主场，
+          正是白领的核心工作
+        </div>
+
+        <div class="hairline" style="margin:32px 0;"></div>
+
+        <div class="body">
+
+          很多白领精英，本质上都在做：
+          高度标准化的信息处理。
+
+        </div>
+
+      </div>
+
+      <div class="col-6 reveal d3">
+
+        <div class="card">
+
+          <div class="small sans muted">
+            AI 高暴露职业
+          </div>
+
+          <div class="tag-row" style="margin-top:20px;">
+
+            <div class="tag red">咨询</div>
+            <div class="tag red">金融分析</div>
+            <div class="tag red">市场研究</div>
+            <div class="tag">法律助理</div>
+            <div class="tag">数据分析</div>
+            <div class="tag">项目助理</div>
+
+          </div>
+
+        </div>
+
+        <div class="quote" style="margin-top:32px;">
+
+          凡是能写成 SOP 的工作，
+          AI 就能做。
+
+        </div>
+
+      </div>
+
+    </div>
+
+    <div class="footer">
+
+      <div>
+        FUTURE OF WORK · WHITE COLLAR AI
+      </div>
+
+      <div>
+        <span class="page">3</span> / 3
+      </div>
+
+    </div>
+
+  </section>
+
+</div>
+
+<script>
+
+class Presentation {
+
+  constructor() {
+
+    this.stage = document.getElementById('stage');
+
+    this.slides = [...document.querySelectorAll('.slide')];
+
+    this.current = 0;
+
+    this.resize();
+
+    this.bindEvents();
+  }
+
+  resize() {
+
+    const scale = Math.min(
+      window.innerWidth / 1920,
+      window.innerHeight / 1080
+    );
+
+    this.stage.style.transform = `scale(${scale})`;
+  }
+
+  go(index) {
+
+    this.slides[this.current].classList.remove('active');
+
+    this.current =
+      (index + this.slides.length) %
+      this.slides.length;
+
+    this.slides[this.current].classList.add('active');
+  }
+
+  next() {
+    this.go(this.current + 1);
+  }
+
+  prev() {
+    this.go(this.current - 1);
+  }
+
+  bindEvents() {
+
+    window.addEventListener(
+      'resize',
+      () => this.resize()
+    );
+
+    document.addEventListener('keydown', e => {
+
+      if (
+        e.key === 'ArrowRight' ||
+        e.key === 'ArrowDown' ||
+        e.key === ' '
+      ) {
+
+        e.preventDefault();
+
+        this.next();
+      }
+
+      if (
+        e.key === 'ArrowLeft' ||
+        e.key === 'ArrowUp'
+      ) {
+
+        e.preventDefault();
+
+        this.prev();
+      }
+
+    });
+
+    document.addEventListener('click', e => {
+
+      if (
+        e.clientX >
+        window.innerWidth / 2
+      ) {
+
+        this.next();
+
+      } else {
+
+        this.prev();
+      }
+
+    });
+
+  }
+
+}
+
+new Presentation();
+
+</script>
+
+</body>
+</html>
