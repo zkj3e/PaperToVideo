@@ -1,0 +1,30 @@
+CLAUDE.md
+  s_5a332ddbc3faa6::t_1b2c5d4862bb5b 1-80
+README.md
+  s_b52c3d2f1d1830::t_6e07ef93bbb8d5 1-80
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.12",
+  "base_commit_sha": "5d775f024c6a25c9d0511ea198bc7fa0960b4ee4",
+  "prompts": {},
+  "logical_commit_id": "5d775f024c6a25c9d0511ea198bc7fa0960b4ee4",
+  "sessions": {
+    "s_5a332ddbc3faa6": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "3f7a116e-c89c-4c1d-8e7b-f016a17bdd60",
+        "model": "deepseek-v4-pro"
+      },
+      "human_author": "zengkejie <zengkejie@bigo.sg>"
+    },
+    "s_b52c3d2f1d1830": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "b0135e64-820d-43f7-9f92-2143df62df03",
+        "model": "deepseek-v4-pro"
+      },
+      "human_author": "zengkejie <zengkejie@bigo.sg>"
+    }
+  }
+}
