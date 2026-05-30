@@ -1,0 +1,5 @@
+# Python dependencies
+Pillow>=10.0.0
+
+# System requirements (install via homebrew on macOS):
+# brew install ffmpeg

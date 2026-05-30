@@ -70,7 +70,7 @@ python scripts/render_slides.py \
 ## 工作流程
 
 1. 解析 HTML 中每页 `.slide` 的 `data-time-start` / `data-time-end` → 秒数
-2. headless Chromium 逐页渲染 → PNG（`<html名>_frame/slide_NN.png`）
+2. Pillow 逐页渲染 → PNG（`<html名>_frame/slide_NN.png`）
 3. ffmpeg 三步合成：
    - PNG → 按时长的 mp4 片段
    - 拼接所有片段
@@ -88,7 +88,7 @@ python scripts/render_slides.py \
 
 ## 依赖
 
-- Python 3 + playwright（`pip install playwright && playwright install chromium`）
+- Python 3 + Pillow（`pip install Pillow`）
 - ffmpeg
 
 ## 适用场景

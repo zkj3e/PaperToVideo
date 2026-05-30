@@ -69,7 +69,7 @@ python scripts/render_slides.py <html路径> <页数> \
 
 这一步自动：
 1. 从 HTML 解析 `data-time-*` → 每页秒数
-2. headless Chromium 逐页截图
+2. Pillow 逐页渲染生成 PNG 图片
 3. ffmpeg 合成视频 + 音频 + 烧录字幕
 
 ### 第四步：验证
@@ -118,8 +118,7 @@ python scripts/render_slides.py ppt.html 10 \
 
 ## 依赖
 
-- Python 3（项目 venv：`剧本/.venv`）
-- playwright + chromium（`pip install playwright && playwright install chromium`）
+- Python 3 + Pillow（`pip install Pillow`）
 - ffmpeg
 
 ## 项目脚本索引
@@ -128,7 +127,6 @@ python scripts/render_slides.py ppt.html 10 \
 |------|------|------|
 | `srt_to_text.py` | `scripts/srt_to_text.py` | SRT 解析（文本提取） |
 | `render_slides.py` | `scripts/render_slides.py` | HTML→PNG→视频 |
-| `compose_video.py` | `剧本/scripts/compose_video.py` | SRT+音频+HTML→视频（备选） |
 
 ## 模板索引
 

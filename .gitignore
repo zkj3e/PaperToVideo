@@ -3,3 +3,4 @@
 .DS_Store
 workspace/example/.build_final
 workspace/example/.build_tmp
+scripts/.runninghub_config.json

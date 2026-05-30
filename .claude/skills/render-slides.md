@@ -1,127 +1,97 @@
 ---
 name: render-slides
-description: 将 HTML PPT 渲染为 PNG 幻灯片序列图，可选根据 HTML 中的时间信息自动合成视频
+description: 使用 Pillow 将 HTML PPT 内容规范渲染为 PNG 幻灯片序列图，支持报纸风和赛博朋克风主题
 ---
 
 # render-slides
 
-将 HTML PPT 的每一页渲染为独立的 PNG 图片（1280x720 @2x），输出到 HTML 同级目录下的 `<文件名>_frame/`。
-
-**当 HTML 包含 `data-time-start` / `data-time-end` 属性且提供音频文件时**，自动进一步合成带时间对齐的视频。
+将 HTML PPT 的内容规范（主题、每页文案和时间范围）渲染为独立的 PNG 幻灯片图片（1280×720），使用 Pillow 绘制，支持**报纸风**和**赛博朋克风**两种视觉主题。
 
 脚本位置: `scripts/render_slides.py`
 
 ## 用法
 
-### 仅渲染 PNG
-
 ```bash
-python scripts/render_slides.py <html文件> [幻灯片数量] [选项]
+python3 scripts/render_slides.py <html_ppt.html> <输出目录>
+
+# 示例
+python3 scripts/render_slides.py "workspace/文章1/字幕-ppt.html" "workspace/文章1/ppt_frames"
 ```
 
-### 渲染 + 自动合成视频
+## 输入
 
-```bash
-python scripts/render_slides.py <html文件> <幻灯片数量> \
-  --audio=<音频.flac> \
-  [--srt=<字幕.srt>] \
-  [--output-video=<成片.mp4>]
-```
-
-## 参数
-
-| 参数 | 说明 | 必填 |
-|------|------|------|
-| `html文件` | PPT HTML 文件路径 | 是 |
-| `幻灯片数量` | 总页数 | 否，默认 8 |
-
-## 选项
-
-| 选项 | 说明 | 默认值 |
-|------|------|--------|
-| `--width=N` | 视口宽度 | 1280 |
-| `--height=N` | 视口高度 | 720 |
-| `--scale=N` | 设备缩放因子 | 2 |
-| `--slides=N` | 幻灯片数量（同位置参数） | 8 |
-| `--port=N` | HTTP 服务器端口 | 8765 |
-| `--audio=<路径>` | **视频模式**：音频文件路径 (flac/mp3/wav) | 无 |
-| `--srt=<路径>` | **视频模式**：SRT 字幕文件（用于烧录字幕） | 无 |
-| `--output-video=<路径>` | **视频模式**：输出视频路径 | `<html文件名>.mp4` |
+HTML PPT 文件（由 `srt-to-ppt-html` skill 生成），包含：
+- `.slide` 元素，每个有 `data-time-start` / `data-time-end` 属性
+- 页面内容（文字、标题、数据等）
 
 ## 输出
 
-### 仅渲染模式
-
 ```
-<html所在目录>/
-└── <html文件名>_frame/
-    ├── slide_01.png
-    ├── slide_02.png
-    ├── ...
-    └── slide_NN.png
+<输出目录>/
+├── slide_01.png    # 幻灯片图片
+├── slide_02.png
+├── ...
+└── slide_NN.png
 ```
 
-### 视频模式
+每页时长根据 HTML 中的 `data-time-start` / `data-time-end` 自动计算，供后续视频合成使用。
 
-在上述 PNG 输出之外，额外生成：
+## 主题识别
 
-```
-<html所在目录>/
-└── <html文件名>.mp4   （或 --output-video 指定路径）
-```
+脚本根据 HTML 内容自动识别主题风格：
 
-## 视频模式工作流程
+| 特征 | 主题 | 配色 |
+|------|------|------|
+| 米黄底 `#f4efe6` | 报纸风 | 深墨 + 红色强调 |
+| 深蓝黑底 `#060816` | 赛博朋克风 | 青色 + 粉色发光 |
 
-1. 解析 HTML 中 `.slide` 元素的 `data-time-start` / `data-time-end` 属性（`MM:SS` 格式），转为秒数
-2. 启动内置 HTTP 服务器，headless Chromium 逐页截图 PNG（同仅渲染模式）
-3. 用 ffmpeg 三步合成：
-   - 每页 PNG → 对应时长的 mp4 片段
-   - 拼接所有片段
-   - 叠加音频 + 可选烧录 SRT 字幕
+## 核心渲染逻辑（Pillow）
 
-**时间分配优先级：**
-1. HTML 中有 `data-time-start` / `data-time-end` → 按属性值精确分配
-2. 无时间属性 → 用音频总时长均匀分配到各页
+### 报纸风渲染
+- 背景：米黄色 `#f4efe6`，叠加纸张纹理
+- 字体：Noto Serif SC（衬线）+ Noto Sans SC（无衬线）
+- 组件：kicker、display（92px）、headline（56px）、body（18px）、stat-card、quote、tag
+- 布局：12 列网格系统
+
+### 赛博朋克风渲染
+- 背景：深蓝黑渐变 + 网格线
+- 字体：SFNS / PingFang（中文）+ Orbitron（英文标题）
+- 组件：display（72px Orbitron）、headline（40px）、subtitle（24px）、panel、stat、tag
+- 特效：青色/粉色发光文字、面板半透明背景、扫描线纹理
+
+### 每页渲染内容
+从 HTML 中解析每页的：
+- `data-time-start` / `data-time-end` → 时间范围（用于后续视频时间轴）
+- 文字内容（kicker、标题、正文、数据、标签等）
+- 组件类型和布局位置
 
 ## 依赖
 
-Python 3, playwright + chromium, ffmpeg
-
 ```bash
-pip install playwright && playwright install chromium
+pip install Pillow
 ```
+
+无需 Playwright 或浏览器。
 
 ## 示例
 
-**仅渲染 8 页幻灯片**：
+**渲染报纸风 PPT**：
 ```bash
-python scripts/render_slides.py "剧本/项目/演示.html" 8
+python3 scripts/render_slides.py "workspace/文章1/字幕-ppt.html" "workspace/文章1/ppt_frames"
 ```
 
-**渲染 10 页 + 自动合成视频（HTML 含时间属性）**：
+**渲染赛博朋克风 PPT**：
 ```bash
-python scripts/render_slides.py "剧本/项目/演示.html" 10 \
-  --audio="剧本/项目/音频.flac" \
-  --output-video="剧本/项目/成片.mp4"
+python3 scripts/render_slides.py "workspace/文章1/字幕-ppt-cyberpunk.html" "workspace/文章1/cyberpunk_frames"
 ```
 
-**渲染 + 视频 + 烧录字幕**：
-```bash
-python scripts/render_slides.py "剧本/项目/演示.html" 10 \
-  --audio="剧本/项目/音频.flac" \
-  --srt="剧本/项目/字幕.srt" \
-  --output-video="剧本/项目/成片.mp4"
+## 生成后操作
+
+渲染完成后，每页时长记录在控制台输出中，例如：
+```
+第1页: 00:00 – 00:23
+第2页: 00:23 – 00:50
+...
 ```
 
-**自定义分辨率**：
-```bash
-python scripts/render_slides.py 演示文稿.html 13 --width=1920 --height=1080 --scale=1
-```
-
-## 与 srt-to-ppt-html 的协作
-
-1. `srt-to-ppt-html` 生成 HTML 时会在每个 `.slide` 上写入 `data-time-start="MM:SS"` 和 `data-time-end="MM:SS"` 属性
-2. 本 skill 读取这些时间属性，自动分配视频中每页的展示时长
-3. 因此无需再手动指定 `--slide-durations`，也无需通过 SRT 重新计算时间分配
-
-这是与 `compose-video`（需要 SRT 文件来计算时间分配）的主要区别 — `render-slides` 的视频模式依赖 HTML 内嵌的时间属性，适合已经通过 `srt-to-ppt-html` 生成好 HTML 的场景。
+这些时长信息传给 `build-video` skill 用于视频合成。

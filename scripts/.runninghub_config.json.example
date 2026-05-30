@@ -1,0 +1,13 @@
+ {
+    "api_key": "YOUR_API_KEY_HERE",
+    "api_url": "https://www.runninghub.ai/openapi/v2/run/ai-app/{workflow_id}",
+    "query_url": "https://www.runninghub.ai/openapi/v2/run/query",
+    "workflow_id": "46034836c9eb4e5297b7eb38e0355601",
+    "instance_type": "default",
+    "use_personal_queue": false,
+    "image": "",
+    "poll": true,
+    "poll_interval": 15,
+    "max_wait": 600,
+    "output": "digital_human_result.json"
+}

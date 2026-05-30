@@ -1,88 +1,165 @@
 ---
-name: compose-video
-description: 将 SRT 字幕 + 音频 + PPT HTML 合成为带字幕的视频
+name: build-video
+description: 将幻灯片图片序列 + 音频 + 数字人开头视频合成为完整成片
 ---
 
-# compose-video
+# build-video
 
-将 SRT 字幕、音频文件、PPT HTML（或幻灯片图片）合成为带烧录字幕的 MP4 视频。
+将 `render-slides` 输出的 PNG 幻灯片图片序列，拼接为连续视频，再与音频、数字人开头视频合成最终成片。
 
-脚本位置: `剧本/scripts/compose_video.py`
+## 流水线
+
+```
+幻灯片图片 (PNG)
+  ↓
+ffmpeg 渲染为 MP4 片段（每页按时间范围设定时长）
+  ↓
+ffmpeg concat 拼接所有片段
+  ↓
+PPT 视频 (ppt_video/ppt_body_raw.mp4)
+  ↓
+ffmpeg 拼接（数字人开头 + PPT 视频）
+  ↓
+添加音频 → 最终成片
+```
 
 ## 用法
 
+### 完整流水线（数字人开头 + PPT + 音频）
+
 ```bash
-cd 剧本/<项目目录> && ../.venv/bin/python3 ../scripts/compose_video.py \
-  "字幕.srt" \
-  "音频.flac" \
-  "演示文稿.html" \
-  -o 成片.mp4
+python3 scripts/build_video.py \
+  --slides "ppt_frames/slide_%02d.png" \
+  --durations "23,27,44,50,70,46,35,31,30" \
+  --audio "音频.flac" \
+  --intro "数字人开头.mp4" \
+  --output "最终成片.mp4"
 ```
 
-## 输入
+### 仅 PPT 视频（无数字人开头）
+
+```bash
+python3 scripts/build_video.py \
+  --slides "ppt_frames/slide_%02d.png" \
+  --durations "23,27,44,50,70,46,35,31,30" \
+  --audio "音频.flac" \
+  --output "PPT成片.mp4"
+```
+
+### 仅渲染视频片段（不添加音频）
+
+```bash
+python3 scripts/build_video.py \
+  --slides "ppt_frames/slide_%02d.png" \
+  --durations "23,27,44,50,70,46,35,31,30" \
+  --output "ppt_video/ppt_body_raw.mp4"
+```
+
+## 参数
 
 | 参数 | 说明 | 必填 |
 |------|------|------|
-| `srt` | SRT 字幕文件 | 是 |
-| `audio` | 音频文件 (flac/mp3/wav 等) | 是 |
-| `ppt_html` | PPT HTML 文件，需包含 `.slide` class 的 div | 否* |
+| `--slides` | PNG 图片路径 pattern，用 `%02d` 占位 | 是 |
+| `--durations` | 每页幻灯片时长（秒），逗号分隔 | 是 |
+| `--audio` | 音频文件路径 (flac/mp3/wav) | 否 |
+| `--intro` | 数字人开头视频路径 | 否 |
+| `--output` | 输出视频路径 | 是 |
+| `--srt` | SRT 字幕文件（烧录字幕用） | 否 |
+| `--width` | 输出视频宽度 | 默认 1280 |
+| `--height` | 输出视频高度 | 默认 720 |
+| `--fps` | 帧率 | 默认 30 |
+| `--crf` | H.264 质量 (0-51，越低越高清) | 默认 18 |
 
-\* `ppt_html` 与 `--slide-images` 二选一。
+## 时长计算方法
 
-## 选项
+每页时长由 HTML PPT 中的 `data-time-start` / `data-time-end` 计算：
 
-| 选项 | 说明 | 默认值 |
-|------|------|--------|
-| `-r, --resolution WxH` | 视频分辨率 | 1280x720 |
-| `-o, --output` | 输出路径 | output.mp4 |
-| `--slide-durations` | 手动指定每页秒数，逗号分隔 | 自动分配 |
-| `--no-render` | 跳过 HTML 渲染 | 否 |
-| `--slide-images` | 已有图片 glob pattern | 无 |
-| `--subtitle-style` | ffmpeg force_style 覆盖 | 内置样式 |
-
-## 幻灯片时间分配
-
-**自动模式（默认）**：优先在 SRT 字幕的自然停顿处（>=0.5s 间隔）换页，停顿不足时均匀分配。
-
-**手动模式**：用 `--slide-durations` 精确控制，例如 8 页幻灯片：
-```bash
---slide-durations 7.8,9.7,9.1,22.0,22.5,31.4,26.5,16.7
+```
+第N页时长 = data-time-end(N) - data-time-start(N)
 ```
 
-## 工作流程
+例如：
+```
+第1页: 00:00 – 00:23 → 23秒
+第2页: 00:23 – 00:50 → 27秒
+第3页: 00:50 – 01:34 → 44秒
+```
 
-1. 解析 SRT -> 提取字幕时间轴
-2. headless Chromium 渲染 HTML -> 每页截图为 PNG
-3. 分配幻灯片时间轴
-4. ffmpeg 三步合成：PNG->mp4 片段 -> 拼接 -> 加音频+烧录字幕
+## 完整流水线步骤
+
+### 第一步：生成幻灯片图片
+
+使用 `render-slides` skill：
+```bash
+python3 scripts/render_slides.py "字幕-ppt.html" "ppt_frames"
+```
+
+### 第二步：渲染视频片段
+
+```bash
+mkdir -p ppt_video
+durations=(23 27 44 50 70 46 35 31 30)
+
+for i in $(seq 1 9); do
+  idx=$((i-1))
+  dur="${durations[$idx]}"
+  png=$(printf "ppt_frames/slide_%02d.png" $i)
+  ffmpeg -hide_banner -y -loop 1 -i "$png" -t "$dur" \
+    -vf "scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2,format=yuv420p" \
+    -r 30 -c:v libx264 -preset veryfast -crf 18 -an "ppt_video/slide_${i}.mp4"
+done
+```
+
+### 第三步：拼接 PPT 视频
+
+```bash
+cat > ppt_video/list.txt << 'EOF'
+file 'slide_1.mp4'
+file 'slide_2.mp4'
+...
+EOF
+
+ffmpeg -hide_banner -y -f concat -safe 0 -i ppt_video/list.txt \
+  -c copy ppt_video/ppt_body_raw.mp4
+```
+
+### 第四步：合并数字人开头 + PPT 视频
+
+```bash
+ffmpeg -hide_banner -y \
+  -i "数字人开头.mp4" \
+  -i "ppt_video/ppt_body_raw.mp4" \
+  -filter_complex "[0:v]scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2,setsar=1[v0];[1:v]scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2,setsar=1[v1];[v0][v1]concat=n=2:v=1:a=0[out]" \
+  -map "[out]" \
+  -c:v libx264 -preset fast -crf 20 \
+  "成片_无音频.mp4"
+```
+
+### 第五步：添加音频
+
+```bash
+ffmpeg -hide_banner -y \
+  -i "成片_无音频.mp4" \
+  -i "音频.flac" \
+  -map 0:v:0 -map 1:a:0 \
+  -c:v copy -c:a aac -b:a 192k \
+  -shortest \
+  "最终成片.mp4"
+```
 
 ## 依赖
 
-Python 3 (venv: `剧本/.venv`), ffmpeg, playwright + chromium
-
-## 常见场景
-
-**已有截图，快速合成**：
 ```bash
-../.venv/bin/python3 ../scripts/compose_video.py \
-  "字幕.srt" 音频.flac \
-  --slide-images "ppt/*.png" --no-render \
-  -o 成片.mp4
+brew install ffmpeg
+pip install Pillow
 ```
 
-**手动控制每页停留时间**：
-```bash
-../.venv/bin/python3 ../scripts/compose_video.py \
-  "字幕.srt" 音频.flac 演示文稿.html \
-  --slide-durations 7.8,9.7,9.1,22.0,22.5,31.4,26.5,16.7 \
-  -o 成片.mp4
-```
+## 输出规格
 
-**指定分辨率和字幕样式**：
-```bash
-../.venv/bin/python3 ../scripts/compose_video.py \
-  "字幕.srt" 音频.flac 演示文稿.html \
-  -r 1920x1080 \
-  --subtitle-style "FontSize=28,PrimaryColour=&H00FFFFFF,Outline=2" \
-  -o 成片.mp4
-```
+| 属性 | 值 |
+|------|-----|
+| 分辨率 | 1280×720（默认） |
+| 帧率 | 30 fps |
+| 视频编码 | H.264 (libx264) |
+| 音频编码 | AAC |
+| 音频码率 | 192kbps |
