@@ -1,453 +1,564 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AI 已经亮牌 — 赛博朋克</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
-<style>
-:root {
-  --bg: #060816;
-  --panel: rgba(10,18,32,.82);
-  --cyan: #00e5ff;
-  --purple: #8b5cf6;
-  --pink: #ff2ea6;
-  --ink: #d8e7ff;
-  --muted: #6e7ea8;
-  --slide-w: 1280px;
-  --slide-h: 720px;
-}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>RunningHub · 人人都是AI创作者</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-* { margin:0; padding:0; box-sizing:border-box; }
+        body {
+            background: radial-gradient(circle at 10% 20%, #03050b, #000000);
+            font-family: 'Inter', 'SF Pro Display', 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, 'Poppins', sans-serif;
+            color: #fff;
+            overflow-x: hidden;
+            line-height: 1.4;
+        }
 
-body {
-  background: radial-gradient(circle at 50% 30%, #17253d 0%, #060816 70%);
-  overflow: hidden;
-  width: 100vw;
-  height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: 'Noto Sans SC', sans-serif;
-}
+        /* 赛博科技背景网格 + 光效 */
+        .cyber-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(#0af3 1px, transparent 1px),
+                linear-gradient(90deg, #0af3 1px, transparent 1px);
+            background-size: 50px 50px;
+            opacity: 0.12;
+            pointer-events: none;
+            z-index: 0;
+        }
 
-/* 扫描线 */
-body::after {
-  content: '';
-  position: fixed; inset: 0;
-  pointer-events: none; opacity: .12;
-  background: repeating-linear-gradient(to bottom,
-    transparent 0px, transparent 2px,
-    rgba(255,255,255,.03) 3px);
-}
+        .glow-gradient {
+            position: fixed;
+            top: -30%;
+            left: -20%;
+            width: 140%;
+            height: 140%;
+            background: radial-gradient(circle, rgba(0, 255, 255, 0.15), rgba(255, 0, 255, 0) 70%);
+            filter: blur(80px);
+            pointer-events: none;
+            z-index: 0;
+        }
 
-/* 网格背景 */
-.grid-bg {
-  position: fixed; inset: 0; pointer-events: none; z-index: 0;
-  background-image:
-    linear-gradient(rgba(0,229,255,.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0,229,255,.04) 1px, transparent 1px);
-  background-size: 40px 40px;
-}
+        /* 主容器 */
+        .container {
+            position: relative;
+            z-index: 2;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem 2rem 4rem;
+        }
 
-.stage {
-  width: var(--slide-w); height: var(--slide-h);
-  position: relative; overflow: hidden;
-  z-index: 1;
-}
+        /* 头部 / 导航 */
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-bottom: 3rem;
+            backdrop-filter: blur(8px);
+            background: rgba(0, 0, 0, 0.45);
+            border-radius: 60px;
+            padding: 0.8rem 2rem;
+            border: 1px solid rgba(0, 255, 255, 0.4);
+            box-shadow: 0 0 15px rgba(0, 180, 255, 0.2);
+        }
+        .logo {
+            font-size: 1.8rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #aaffff, #3b82f6);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            letter-spacing: -0.5px;
+        }
+        .logo span {
+            font-size: 1.2rem;
+            background: none;
+            color: cyan;
+            font-weight: 500;
+        }
+        .nav-links {
+            display: flex;
+            gap: 28px;
+            font-weight: 500;
+        }
+        .nav-links a {
+            color: #ddd;
+            text-decoration: none;
+            transition: 0.2s;
+            font-size: 0.95rem;
+        }
+        .nav-links a:hover {
+            color: #0ff;
+            text-shadow: 0 0 5px cyan;
+        }
+        .btn-outline-light {
+            border: 1px solid cyan;
+            background: transparent;
+            padding: 6px 18px;
+            border-radius: 40px;
+            color: cyan;
+            font-weight: 600;
+        }
 
-/* ---- 幻灯片 ---- */
-.slide {
-  position: absolute; inset: 0;
-  padding: 64px 80px;
-  display: flex; flex-direction: column;
-  justify-content: center;
-  opacity: 0; pointer-events: none;
-  transition: opacity .45s ease;
-}
-.slide.active { opacity: 1; pointer-events: auto; }
+        /* hero 区域 */
+        .hero {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 40px;
+            margin: 60px 0 40px;
+        }
+        .hero-left {
+            flex: 1.2;
+            min-width: 260px;
+        }
+        .badge {
+            display: inline-block;
+            background: rgba(0, 255, 255, 0.2);
+            backdrop-filter: blur(4px);
+            padding: 6px 14px;
+            border-radius: 40px;
+            font-size: 0.75rem;
+            border-left: 2px solid cyan;
+            margin-bottom: 20px;
+            letter-spacing: 1px;
+        }
+        .hero-left h1 {
+            font-size: 3.7rem;
+            font-weight: 800;
+            line-height: 1.2;
+            background: linear-gradient(135deg, #FFFFFF, #7dd3fc, #22d3ee);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 20px;
+        }
+        .hero-left p {
+            font-size: 1.1rem;
+            color: #bbb;
+            max-width: 550px;
+            margin-bottom: 30px;
+        }
+        .cta-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+        .btn-primary {
+            background: linear-gradient(95deg, #0ac8ff, #b62eff);
+            border: none;
+            padding: 12px 32px;
+            border-radius: 40px;
+            font-weight: bold;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: 0.2s;
+            box-shadow: 0 0 12px rgba(0, 255, 255, 0.5);
+            color: white;
+        }
+        .btn-primary:hover {
+            transform: scale(1.02);
+            box-shadow: 0 0 20px cyan;
+        }
+        .btn-secondary {
+            background: rgba(20, 30, 55, 0.8);
+            backdrop-filter: blur(8px);
+            border: 1px solid #3b82f6;
+            padding: 12px 28px;
+            border-radius: 40px;
+            font-weight: 600;
+        }
 
-/* 渲染模式：hash 定位时直接显示对应slide */
-.export-mode .slide { opacity: 0 !important; pointer-events: none !important; }
-.export-mode .slide.target { opacity: 1 !important; }
+        .hero-right {
+            flex: 1;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 32px;
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(0, 255, 255, 0.4);
+            padding: 20px;
+            box-shadow: 0 20px 35px -10px rgba(0,0,0,0.6);
+        }
+        .code-window {
+            background: #0a0c15;
+            border-radius: 20px;
+            overflow: hidden;
+            font-family: 'Fira Code', monospace;
+        }
+        .window-bar {
+            background: #151e2c;
+            padding: 12px 16px;
+            display: flex;
+            gap: 8px;
+            border-bottom: 1px solid #2a3950;
+        }
+        .window-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #ff5f56;
+        }
+        .window-dot:nth-child(2) { background: #ffbd2e; }
+        .window-dot:nth-child(3) { background: #27c93f; }
+        .error-log {
+            padding: 20px;
+            color: #ff9e6e;
+            font-size: 0.85rem;
+            background: #03060e;
+        }
+        .error-line {
+            font-family: monospace;
+            border-left: 2px solid #ff3366;
+            padding-left: 12px;
+            margin: 8px 0;
+            color: #ff8c6b;
+        }
+        .success-tag {
+            color: #0f0;
+            margin-top: 12px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            font-size: 0.8rem;
+            border-top: 1px solid #2a3a55;
+            padding-top: 12px;
+        }
 
-/* ---- 通用组件 ---- */
-.kicker {
-  color: var(--cyan); letter-spacing: 4px;
-  font-size: 13px; margin-bottom: 24px;
-  font-family: 'Orbitron', sans-serif;
-  text-transform: uppercase;
-}
+        /* 卖点卡片区 */
+        .features {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 28px;
+            margin: 80px 0 60px;
+        }
+        .feature-card {
+            background: rgba(12, 20, 32, 0.7);
+            backdrop-filter: blur(8px);
+            border-radius: 32px;
+            padding: 28px 20px;
+            width: 260px;
+            text-align: center;
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            transition: 0.25s;
+        }
+        .feature-card:hover {
+            border-color: cyan;
+            transform: translateY(-6px);
+            box-shadow: 0 12px 28px -8px rgba(0, 255, 255, 0.3);
+        }
+        .feature-icon {
+            font-size: 2.8rem;
+            margin-bottom: 16px;
+        }
+        .feature-card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+        }
+        .feature-card p {
+            font-size: 0.85rem;
+            color: #b0c4e7;
+        }
 
-.display {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 72px; line-height: 1;
-  color: var(--cyan);
-  text-shadow: 0 0 12px rgba(0,229,255,.7), 0 0 32px rgba(0,229,255,.3);
-}
+        /* 影视级 + 工作流板块 (RHTV等) */
+        .showcase {
+            background: linear-gradient(145deg, #081020, #010101);
+            border-radius: 48px;
+            padding: 40px 32px;
+            margin: 50px 0;
+            border: 1px solid #2d4a7a;
+            position: relative;
+            overflow: hidden;
+        }
+        .showcase:before {
+            content: "⚡ RHTV · AI智能体导演 ⚡";
+            position: absolute;
+            top: 12px;
+            right: 20px;
+            font-size: 0.7rem;
+            opacity: 0.6;
+            background: #0ff11c;
+            padding: 2px 12px;
+            border-radius: 30px;
+            color: black;
+            font-weight: bold;
+        }
+        .showcase h2 {
+            font-size: 2rem;
+            margin-bottom: 20px;
+        }
+        .flex-gen {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 30px;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .gen-command {
+            flex: 1;
+            background: #021a2a;
+            padding: 20px;
+            border-radius: 28px;
+            font-family: monospace;
+        }
+        .cmd-line {
+            background: black;
+            padding: 12px;
+            border-radius: 18px;
+            color: #0ff;
+            margin-bottom: 18px;
+        }
+        .style-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin: 20px 0;
+        }
+        .tag {
+            background: #0a2a3a;
+            border-radius: 26px;
+            padding: 5px 16px;
+            font-size: 0.8rem;
+        }
+        .preview-grid {
+            flex: 1;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+        .style-box {
+            background: rgba(0,0,0,0.6);
+            border-radius: 24px;
+            padding: 18px 6px;
+            text-align: center;
+            border: 1px solid #0ff55a;
+            backdrop-filter: blur(2px);
+        }
+        .style-box span {
+            font-size: 1.7rem;
+            display: block;
+        }
 
-.headline {
-  font-size: 40px; font-weight: 900; color: var(--ink);
-  line-height: 1.3; letter-spacing: 2px;
-}
+        /* 分成/赚钱部分 */
+        .earn-section {
+            display: flex;
+            flex-wrap: wrap;
+            background: rgba(0, 255, 255, 0.03);
+            border-radius: 48px;
+            padding: 32px;
+            margin: 50px 0;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px dashed #3b82f6;
+        }
+        .earn-left h3 {
+            font-size: 2rem;
+            margin-bottom: 12px;
+        }
+        .profit-badge {
+            font-size: 3rem;
+            font-weight: 800;
+            background: linear-gradient(120deg, gold, #ffb347);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
 
-.subtitle {
-  margin-top: 28px; max-width: 900px;
-  color: var(--ink); font-size: 24px; line-height: 1.7; font-weight: 300;
-}
+        /* 评论区模拟 + 总结 */
+        .comment-section {
+            background: rgba(0, 0, 0, 0.65);
+            border-radius: 48px;
+            padding: 30px;
+            margin-top: 40px;
+            border: 1px solid #2c5a7a;
+        }
+        .comment-title {
+            font-size: 1.4rem;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+        .comment-cards {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .comment {
+            background: #0d1824;
+            border-radius: 28px;
+            padding: 16px 24px;
+            border-left: 5px solid #0ff;
+        }
+        .comment strong {
+            color: cyan;
+        }
+        .footer-call {
+            text-align: center;
+            margin-top: 60px;
+            font-size: 1.3rem;
+            font-weight: bold;
+        }
+        .highlight {
+            color: #0ff;
+            text-shadow: 0 0 6px cyan;
+        }
 
-.panel {
-  margin-top: 40px; padding: 32px 40px;
-  background: var(--panel);
-  border: 1px solid rgba(0,229,255,.2);
-  backdrop-filter: blur(12px);
-  box-shadow: inset 0 0 32px rgba(0,229,255,.05), 0 0 40px rgba(0,229,255,.06);
-  max-width: 960px;
-}
+        @media (max-width: 860px) {
+            .hero-left h1 { font-size: 2.2rem; }
+            .navbar { flex-direction: column; align-items: stretch; text-align: center; }
+            .nav-links { justify-content: center; }
+            .container { padding: 1.2rem; }
+        }
 
-.stat-row { display: flex; gap: 80px; align-items: flex-start; }
-.stat-col { flex: 1; }
-
-.big-num {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 110px; font-weight: 900; line-height: 1;
-  text-shadow: 0 0 16px rgba(255,46,166,.6), 0 0 40px rgba(255,46,166,.25);
-}
-.big-num.cyan  { color: var(--cyan);  text-shadow: 0 0 16px rgba(0,229,255,.6), 0 0 40px rgba(0,229,255,.25); }
-.big-num.pink  { color: var(--pink);  }
-.big-num.white { color: #fff; }
-
-.num-label { margin-top: 10px; color: var(--muted); font-size: 18px; line-height: 1.7; }
-
-.tag-row { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 20px; }
-.tag {
-  padding: 8px 20px; border: 1px solid rgba(0,229,255,.3);
-  color: var(--cyan); font-size: 15px; font-weight: 500;
-  background: rgba(0,229,255,.06);
-}
-
-.divider {
-  width: 60px; height: 3px;
-  background: var(--pink);
-  margin: 20px 0 24px;
-  box-shadow: 0 0 8px rgba(255,46,166,.5);
-}
-
-.vs-divider {
-  display: flex; align-items: center; justify-content: center;
-  font-family: 'Orbitron', sans-serif;
-  font-size: 28px; color: var(--muted);
-  min-width: 50px;
-}
-
-.quote-block {
-  margin-top: 24px; padding-left: 20px;
-  border-left: 3px solid var(--cyan);
-  color: var(--ink); font-size: 20px; line-height: 1.7;
-  font-weight: 300;
-}
-
-/* 提示文字 */
-.hint {
-  position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%);
-  color: rgba(255,255,255,.18); font-size: 13px;
-  z-index: 10; pointer-events: none;
-  font-family: 'Noto Sans SC', sans-serif;
-}
-
-/* 角标装饰 */
-.corner-deco {
-  position: absolute; top: 20px; right: 28px;
-  font-family: 'Orbitron', sans-serif;
-  font-size: 11px; color: rgba(0,229,255,.25);
-  letter-spacing: 3px;
-}
-
-/* 脉冲圆点 */
-.pulse-dot {
-  display: inline-block; width: 8px; height: 8px;
-  border-radius: 50%; background: var(--pink);
-  box-shadow: 0 0 8px var(--pink);
-  margin-right: 8px;
-  animation: pulse 2s infinite;
-}
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: .3; }
-}
-
-/* 冰山下装饰 */
-.iceberg-viz {
-  margin-top: 30px; display: flex; flex-direction: column; align-items: center;
-  gap: 12px;
-}
-.iceberg-bar {
-  height: 8px; background: var(--cyan);
-  box-shadow: 0 0 12px rgba(0,229,255,.5);
-}
-</style>
+        .blink-text {
+            animation: pulse 1.2s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; text-shadow: 0 0 0px cyan;}
+            50% { opacity: 0.7; text-shadow: 0 0 6px cyan;}
+            100% { opacity: 1; }
+        }
+        .gpu-error {
+            background: #22000088;
+            border-radius: 14px;
+            padding: 8px;
+        }
+    </style>
 </head>
 <body>
+<div class="cyber-bg"></div>
+<div class="glow-gradient"></div>
 
-<div class="grid-bg"></div>
-
-<div class="stage" id="stage">
-
-  <!-- ===== slide 1 ===== -->
-  <section class="slide" id="slide-1">
-    <div class="corner-deco">01 / 08</div>
-    <div class="kicker"><span class="pulse-dot"></span> AI LABOR MARKET REPORT · ANTHROPIC 2026</div>
-    <div class="display">OBSERVED<br>EXPOSURE</div>
-    <div class="subtitle">不是 AI 能做什么，而是 AI 已经开始替代什么</div>
-    <div class="panel">
-      <div style="color:var(--cyan);font-size:15px;letter-spacing:2px;margin-bottom:16px;">计算机 & 数学领域</div>
-      <div class="stat-row">
-        <div class="stat-col" style="text-align:center;">
-          <div class="big-num cyan">94%</div>
-          <div class="num-label">理论能力覆盖</div>
+<div class="container">
+    <!-- 导航栏 -->
+    <div class="navbar">
+        <div class="logo">RunningHub<span> · 云上创智</span></div>
+        <div class="nav-links">
+            <a href="#">工作流</a>
+            <a href="#">模型库</a>
+            <a href="#">社区</a>
+            <a href="#">定价</a>
+            <a href="#" class="btn-outline-light">创作者后台</a>
         </div>
-        <div class="vs-divider">/</div>
-        <div class="stat-col" style="text-align:center;">
-          <div class="big-num pink">33%</div>
-          <div class="num-label">实际暴露度</div>
+    </div>
+
+    <!-- 主视觉区 -->
+    <div class="hero">
+        <div class="hero-left">
+            <div class="badge">✨ 你的浏览器 = 超级电脑 ✨</div>
+            <h1>干掉技术门槛，<br>人人都是<span class="highlight">AI创作者</span>！</h1>
+            <p>无需昂贵显卡，<strong class="highlight">4G显存</strong>也能跑FLUX、Wan2.2。<br>云端算力 + 开箱即用，点一下就能生成赛博大片！</p>
+            <div class="cta-group">
+                <button class="btn-primary">⚡ 免费开始创作</button>
+                <button class="btn-secondary">🎬 RHTV · AI智能体导演</button>
+            </div>
         </div>
-      </div>
-      <div style="margin-top:20px;color:var(--muted);font-size:16px;text-align:center;">差距不在能力，而在现实门槛 — 系统、权限、信任还没完全放行</div>
-    </div>
-  </section>
-
-  <!-- ===== slide 2 ===== -->
-  <section class="slide" id="slide-2">
-    <div class="corner-deco">02 / 08</div>
-    <div class="headline">卡住 AI 的，是<span style="color:var(--cyan);">权限</span>、<span style="color:var(--pink);">信任</span>和<span style="color:var(--purple);">签字权</span></div>
-    <div class="divider"></div>
-    <div class="subtitle">
-      系统没接入，权限不到位<br>
-      人还不完全信任 AI<br>
-      更关键的是 — <span style="color:var(--pink);">AI 不能背锅</span>
-    </div>
-    <div class="panel" style="margin-top:32px;">
-      <div style="display:flex;gap:60px;align-items:center;">
-        <div style="flex:1;text-align:center;">
-          <div style="font-size:48px;font-family:'Orbitron',sans-serif;color:var(--cyan);">AI</div>
-          <div style="color:var(--muted);margin-top:8px;">可以干活</div>
+        <div class="hero-right">
+            <div class="code-window">
+                <div class="window-bar">
+                    <div class="window-dot"></div><div class="window-dot"></div><div class="window-dot"></div>
+                    <span style="margin-left: 12px; font-size: 0.7rem;">terminal@runninghub</span>
+                </div>
+                <div class="error-log">
+                    <div class="error-line">> ERKOR:CUDA out of memory</div>
+                    <div class="error-line">> ERKOR:CUDA out of memory</div>
+                    <div class="error-line">> ERKOR:CUDA out of memory</div>
+                    <div class="error-line" style="color: #ffb347;">> 切换云端节点... ✓ 成功</div>
+                    <div class="success-tag">
+                        <span>✅ 免费算力已就绪 | FLUX.1 加载完毕</span>
+                        <span>🚀 显存释放，无痛生成</span>
+                    </div>
+                </div>
+            </div>
+            <p style="font-size: 0.7rem; text-align: center; margin-top: 12px;">💬 告别卡死与挫败感！本地烦恼 → 云端秒级响应</p>
         </div>
-        <div style="color:var(--muted);font-size:28px;">→</div>
-        <div style="flex:1;text-align:center;">
-          <div style="font-size:48px;font-weight:900;color:var(--ink);">签字</div>
-          <div style="color:var(--muted);margin-top:8px;">还是人来</div>
+    </div>
+
+    <!-- 核心特性：低显存 + 风格多 镜像设计 -->
+    <div class="features">
+        <div class="feature-card"><div class="feature-icon">🖥️🚫</div><h3>4G显存友好</h3><p>FLUX、Wan2.2 照样跑，再也不用盯着 CUDA out of memory 崩溃！</p></div>
+        <div class="feature-card"><div class="feature-icon">🎨✨</div><h3>风格全覆盖</h3><p>水墨风 · 3D盲盒 · 写实大片 · 赛博朋克，AI一键切换</p></div>
+        <div class="feature-card"><div class="feature-icon">⚙️☁️</div><h3>开箱即用</h3><p>Python环境、节点、工作流全云端预置，浏览器即工作室</p></div>
+        <div class="feature-card"><div class="feature-icon">💰📈</div><h3>最高70%分成</h3><p>发布独家工作流，边玩边赚钱！平台与变现直通车</p></div>
+    </div>
+
+    <!-- 影视科幻&赛博朋克 演示区 呼应FLUX + Wan2.2 -->
+    <div class="showcase">
+        <h2>🤖 AI智能体导演 · 科幻短片工坊</h2>
+        <div class="flex-gen">
+            <div class="gen-command">
+                <div class="cmd-line">> /create --style “赛博朋克·霓虹雨夜” --engine FLUX --duration 15s</div>
+                <div class="cmd-line">> 调用 Wan2.2 超分辨率中 … 实时渲染</div>
+                <div class="style-tags">
+                    <span class="tag">🌆 赛博朋克</span>
+                    <span class="tag">🌊 水墨风</span>
+                    <span class="tag">🎁 3D盲盒</span>
+                    <span class="tag">🎬 写实大片</span>
+                </div>
+                <p style="font-size:0.7rem; margin-top:10px;">✨ 打字对话，自动搞定一切！从剧本到分镜全AI生成✨</p>
+                <div class="success-tag" style="border: none;">🎥 海马云技术 × 实时云渲染</div>
+            </div>
+            <div class="preview-grid">
+                <div class="style-box"><span>🌃⚡</span> 赛博朋克·雨夜</div>
+                <div class="style-box"><span>🎋🖌️</span> 水墨山河</div>
+                <div class="style-box"><span>📦🎀</span> 3D盲盒公仔</div>
+                <div class="style-box"><span>🎞️🔥</span> 写实科幻大片</div>
+            </div>
         </div>
-      </div>
-    </div>
-    <div class="tag-row">
-      <div class="tag">权限锁</div>
-      <div class="tag">审批流</div>
-      <div class="tag">电子签章</div>
-      <div class="tag">责任归属</div>
-    </div>
-  </section>
-
-  <!-- ===== slide 3 ===== -->
-  <section class="slide" id="slide-3">
-    <div class="corner-deco">03 / 08</div>
-    <div class="headline">现在看到的，只是<span style="color:var(--cyan);">冰山一角</span></div>
-    <div class="divider"></div>
-    <div class="subtitle">
-      暴露度只是 AI 潜力露出水面的一小部分<br>
-      随着系统接入更深，信任和流程逐步建立<br>
-      <span style="color:var(--cyan);">这个比例还会继续扩大</span>
-    </div>
-    <div class="iceberg-viz" style="max-width:600px;">
-      <div class="iceberg-bar" style="width:120px;"></div>
-      <div style="color:var(--cyan);font-size:14px;">33% 暴露度 — 水面之上</div>
-      <div style="height:20px;"></div>
-      <div class="iceberg-bar" style="width:360px;opacity:.5;"></div>
-      <div style="color:var(--muted);font-size:14px;">94% 理论能力 — 水面之下</div>
-    </div>
-  </section>
-
-  <!-- ===== slide 4 ===== -->
-  <section class="slide" id="slide-4">
-    <div class="corner-deco">04 / 08</div>
-    <div class="headline">越<span style="color:var(--pink);">精英</span>，越先<span style="color:var(--pink);">承压</span></div>
-    <div class="divider"></div>
-    <div class="panel">
-      <div class="stat-row">
-        <div class="stat-col" style="text-align:center;">
-          <div class="big-num pink">4<span style="font-size:40px;">×</span></div>
-          <div class="num-label">研究生比例<br>是安全职业的 <b>4 倍</b></div>
+        <div style="margin-top: 26px; background: #0a0f1e; border-radius: 24px; padding: 12px 20px; font-size:0.9rem;">
+            <span>🎬 RHTV：“AI智能体导演” 上线 ———— 输入文字，自动生成科幻短片，支持FLUX底模与Wan2.2插帧，4G显存云端无压力！</span>
         </div>
-        <div class="stat-col" style="text-align:center;">
-          <div class="big-num cyan">$32.69</div>
-          <div class="num-label">平均时薪<br>比安全职业高 <b style="color:var(--pink);">47%</b></div>
+    </div>
+
+    <!-- 平台与变现 亮点 -->
+    <div class="earn-section">
+        <div class="earn-left">
+            <h3>🔥 平台与变现 · 创作者经济</h3>
+            <p>发布独家工作流 / 节点 / LoRA，坐享<span class="profit-badge"> 最高70%分成</span></p>
+            <div class="cta-group" style="margin-top: 20px;">
+                <button class="btn-primary" style="background: linear-gradient(95deg, #f0a500, #ff5e00);">🚀 成为创作者</button>
+                <span style="align-self: center;">✨ 已有3600+工作流产生收益</span>
+            </div>
         </div>
-      </div>
-    </div>
-    <div class="quote-block">
-      成本越高，越容易被重新计算 — 企业降本增效，最先动刀的就是人力成本更高的人
-    </div>
-  </section>
-
-  <!-- ===== slide 5 ===== -->
-  <section class="slide" id="slide-5">
-    <div class="corner-deco">05 / 08</div>
-    <div class="headline">我见过一个<span style="color:var(--pink);">部门消失</span></div>
-    <div class="divider"></div>
-    <div class="subtitle">
-      德国慕尼黑 · 大公司 · <span style="color:var(--cyan);">Market Intelligence</span><br>
-      5 个研究生全职 + 2 个名校实习生
-    </div>
-    <div class="panel" style="margin-top:28px;text-align:center;">
-      <div style="font-size:22px;color:var(--muted);">
-        搜集信息 → 整理分析 → 写报告 → 发给产品和老板
-      </div>
-      <div style="margin-top:24px;font-size:28px;color:var(--pink);font-weight:700;">
-        现在这个部门没了<br>
-        <span style="font-size:20px;color:var(--ink);">工作全由 AI 接管，还干得比人好</span>
-      </div>
-    </div>
-  </section>
-
-  <!-- ===== slide 6 ===== -->
-  <section class="slide" id="slide-6">
-    <div class="corner-deco">06 / 08</div>
-    <div class="headline">白领<span style="color:var(--cyan);">基础活</span>正在被改写</div>
-    <div class="divider"></div>
-    <div class="tag-row">
-      <div class="tag">咨询</div>
-      <div class="tag">金融</div>
-      <div class="tag">市场研究</div>
-      <div class="tag">数据分析</div>
-      <div class="tag">法律助理</div>
-      <div class="tag">人力运营</div>
-      <div class="tag">客服</div>
-      <div class="tag">项目助理</div>
-    </div>
-    <div class="quote-block" style="margin-top:32px;">
-      这些工作的共同点：高度标准化的信息处理<br>
-      要求严谨、有逻辑、结构化表达<br>
-      <span style="color:var(--cyan);">恰恰是 AI 的天赋技能</span>
-    </div>
-  </section>
-
-  <!-- ===== slide 7 ===== -->
-  <section class="slide" id="slide-7">
-    <div class="corner-deco">07 / 08</div>
-    <div class="headline">年轻人的<span style="color:var(--pink);">入口变窄了</span></div>
-    <div class="divider"></div>
-    <div class="panel" style="text-align:center;">
-      <div class="big-num pink" style="font-size:130px;">−14%</div>
-      <div class="num-label" style="font-size:20px;">
-        AI 暴露度最高职业中，<b>22~25 岁</b>年轻人入职率<br>
-        近两年下降 <b style="color:var(--pink);">14%</b>
-      </div>
-    </div>
-    <div class="quote-block">
-      过去大厂招新人，因为总得有人干基础活 — 一种体力型脑力劳动<br>
-      现在这些活 AI 全会，还比新人更快更好<br>
-      <span style="color:var(--cyan);">不是不努力，是门变窄了</span>
-    </div>
-  </section>
-
-  <!-- ===== slide 8 ===== -->
-  <section class="slide" id="slide-8">
-    <div class="corner-deco">08 / 08</div>
-    <div class="headline">未来拼的是<span style="color:var(--cyan);">能力结构</span></div>
-    <div class="divider"></div>
-    <div class="subtitle">
-      关键不是选某职业或躲某职业<br>
-      而是重建自己的能力结构
-    </div>
-    <div class="panel" style="margin-top:32px;">
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px 32px;">
-        <div><span style="color:var(--cyan);font-size:22px;">▸</span> 解决真实问题</div>
-        <div><span style="color:var(--cyan);font-size:22px;">▸</span> 敢于决策</div>
-        <div><span style="color:var(--cyan);font-size:22px;">▸</span> 审美与判断力</div>
-        <div><span style="color:var(--cyan);font-size:22px;">▸</span> 为结果负责</div>
-        <div><span style="color:var(--cyan);font-size:22px;">▸</span> 自主学习</div>
-        <div><span style="color:var(--cyan);font-size:22px;">▸</span> 好奇心</div>
-        <div style="grid-column:1/-1;text-align:center;margin-top:12px;">
-          <span style="font-family:'Orbitron',sans-serif;font-size:32px;color:var(--pink);letter-spacing:3px;">HIGH AGENCY</span>
-          <div style="color:var(--muted);margin-top:4px;">主观能动性</div>
+        <div style="background:#001e2e; border-radius: 28px; padding: 15px 22px;">
+            <p>✅ 免费算力 + 一键部署环境<br>✅ Python环境/节点托管<br>✅ 平台流量分发 & 品牌曝光<br>✅ 边玩边赚，睡后收入</p>
         </div>
-      </div>
     </div>
-  </section>
 
+    <!-- 总结区块 契合图片内文案 “复杂的算力在云端，简单的操作留给你” -->
+    <div style="background: linear-gradient(120deg, #0f212f, #010a12); border-radius: 48px; padding: 30px; text-align: center;">
+        <p style="font-size: 1.8rem; font-weight: bold;">💡 总结：<span class="highlight">复杂的算力在云端</span>，<span style="color: #ffe0a3;">简单的操作留给你！</span></p>
+        <p style="margin-top: 18px; font-size: 1.1rem;">无需昂贵显卡，浏览器就是你的“超级电脑”。从FLUX到Wan2.2，从水墨风到赛博短片，打字对话自动成片。<br>🎉 快去试试，评论区见！ 🎉</p>
+    </div>
+
+    <!-- 评论区模拟（参考prompt：评论区见） -->
+    <div class="comment-section">
+        <div class="comment-title">💬 社区热评 · “真·黑科技”</div>
+        <div class="comment-cards">
+            <div class="comment"><strong>@AI绘画小新</strong>： “以前总是CUDA out of memory，换了RunningHub云端直接起飞，赛博朋克短片生成只要2分钟！”</div>
+            <div class="comment"><strong>@独立创作者老K</strong>： “工作流发布一个月，分成收入破万，最高70%真的顶，还送免费算力，良心！”</div>
+            <div class="comment"><strong>@数字艺术bot</strong>： “RHTV的AI导演模式太炸了！输入‘赛博朋克+武士+雨天’，直接给出完整短片分镜，FLUX画质无敌！”</div>
+            <div class="comment"><strong>@大懒糖AI</strong>： “4G显存救星！水墨风/3D盲盒风格随意切换，海马云技术延迟超低，再也不被硬件限制。” </div>
+        </div>
+        <div style="margin-top: 24px; text-align: center; font-size: 0.9rem;">⭐ 10万+创作者已上车 ⭐  &nbsp;&nbsp; <span style="color: cyan;">#人人都是AI创作者</span></div>
+    </div>
+
+    <!-- 最后call to action -->
+    <div class="footer-call">
+        <span>⚡ RunningHub —— 干掉门槛，云端无限创作 ⚡</span><br>
+        <small style="opacity: 0.7;">FLUX · Wan2.2 · 免费算力 · 节点工作流商店</small><br>
+        <button class="btn-primary" style="margin-top: 20px; background: #0af;">🎯 立即体验 · 评论区见 🎯</button>
+    </div>
 </div>
-
-<div class="hint" id="hint">点击任意位置翻页 · ← → 键盘翻页</div>
-
-<script>
-(function() {
-  var slides = document.querySelectorAll('.slide');
-  var total = slides.length;
-  var cur = 0;
-  var hint = document.getElementById('hint');
-  var stage = document.getElementById('stage');
-  var hash = window.location.hash;
-
-  // 导出/渲染模式：hash 定位单页，无交互
-  if (hash && /^#slide-\d+$/.test(hash)) {
-    document.body.classList.add('export-mode');
-    var target = document.querySelector(hash);
-    if (target) target.classList.add('target');
-    if (hint) hint.style.display = 'none';
-    return; // 不绑定交互
-  }
-
-  function show(idx) {
-    slides.forEach(function(s) { s.classList.remove('active'); });
-    slides[idx].classList.add('active');
-    cur = idx;
-    if (idx === total - 1) {
-      hint.textContent = '已到最后一页 · 点击回到首页';
-    } else {
-      hint.textContent = '点击任意位置翻页 · ← → 键盘翻页';
-    }
-  }
-
-  function next() { show((cur + 1) % total); }
-  function prev() { show((cur - 1 + total) % total); }
-
-  // 初始显示第一页
-  show(0);
-
-  // 键盘翻页
-  document.addEventListener('keydown', function(e) {
-    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { e.preventDefault(); next(); }
-    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   { e.preventDefault(); prev(); }
-  });
-
-  // 点击翻页（排除文本选择）
-  var mouseDown = false;
-  document.addEventListener('mousedown', function() { mouseDown = true; });
-  document.addEventListener('mouseup', function(e) {
-    if (!mouseDown) return;
-    mouseDown = false;
-    // 检查是否是文本选择拖拽
-    if (window.getSelection().toString().trim().length > 0) return;
-    next();
-  });
-
-  // 触摸翻页
-  var touchStartX = 0, touchStartY = 0;
-  document.addEventListener('touchstart', function(e) {
-    touchStartX = e.touches[0].clientX;
-    touchStartY = e.touches[0].clientY;
-  }, {passive: true});
-  document.addEventListener('touchend', function(e) {
-    var dx = (e.changedTouches[0]||{}).clientX - touchStartX;
-    var dy = (e.changedTouches[0]||{}).clientY - touchStartY;
-    if (Math.abs(dx) < 10 && Math.abs(dy) < 10) next(); // tap
-    else if (dx < -40) next();
-    else if (dx > 40) prev();
-  });
-
-})();
-</script>
 
 </body>
 </html>

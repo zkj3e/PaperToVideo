@@ -46,12 +46,172 @@ description: >-
 - 页脚：footer 显示来源 + 页码
 
 ### 赛博朋克风 ([赛博朋克风.html](../../../html模版/赛博朋克风.html))
-- 尺寸：1280×720
-- 配色：深蓝黑底渐变，青色 `#00e5ff`，紫色 `#8b5cf6`，粉色 `#ff2ea6`
-- 字体：Orbitron（英文标题）+ Noto Sans SC（正文）
-- 组件：kicker、display、subtitle、panel、stat/number/label
-- 风格：扫描线纹理、发光文字、半透明面板
-- 简化结构，适合单页或少量内容展示
+
+#### 基础规格
+- **尺寸**：1280×720（16:9 比例）
+- **背景**：深蓝黑渐变 `radial-gradient(circle at 10% 20%, #03050b, #000000)`
+- **网格纹理**：`.cyber-bg` 创建 50px 赛博网格线（青色 `#0af`，透明度12%）
+- **光效**：`.glow-gradient` 径向渐变发光（青色+紫色）
+
+#### 配色系统（CSS 变量）
+```css
+--bg: #060816;        /* 主背景：深邃蓝黑 */
+--bg-light: #0a0f1e;  /* 浅色面板背景 */
+--cyan: #00e5ff;      /* 霓虹青 */
+--pink: #ff2ea6;      /* 霓虹粉 */
+--purple: #8b5cf6;    /* 紫色 */
+--gold: #f0a500;      /* 金色（用于盈利数据） */
+--ink: #d8e7ff;       /* 主文字：冷白 */
+--muted: #6e7ea8;     /* 次要文字 */
+--success: #0f0;      /* 成功绿 */
+--error: #ff3366;     /* 错误红 */
+```
+
+#### 字体系统
+- **英文标题**：Orbitron（科幻感，等宽显示）
+- **中文正文**：Noto Sans SC（无衬线，清晰易读）
+- **代码/终端**：Fira Code / monospace
+
+#### 核心组件详解
+
+| 组件 | class 名 | 视觉特征 | 适用场景 |
+|------|----------|---------|---------|
+| **背景网格** | `.cyber-bg` | 50px 青色网格线，12%透明度，fixed 定位 | 全局背景 |
+| **发光层** | `.glow-gradient` | 径向渐变，blur(80px)，pointer-events:none | 氛围光效 |
+| **高亮文字** | `.highlight` | 青色 `#0ff`，text-shadow 发光 `0 0 6px cyan` | 强调关键词 |
+| **徽章** | `.badge` | 半透明青色背景，backdrop-filter:blur，左侧 2px cyan 边框 | 标签/角标 |
+| **主标题** | `.display` | Orbitron 字体，渐变文字（白→青），大字号 | 封面标题 |
+| **副标题** | `.subtitle` | 较大字号，冷白色，清晰可读 | 正文/说明 |
+| **面板** | `.panel` | 半透明黑底 `rgba(0,0,0,0.5)`，backdrop-filter:blur(12px)，圆角32px，border:1px solid rgba(0,255,255,0.4) | 卡片容器 |
+| **统计数字** | `.stat` > `.number` | Orbitron 字体，霓虹青/粉/紫色，大字号 | 数据展示 |
+| **统计标签** | `.stat` > `.label` | 较小字号，muted 颜色 | 数据说明 |
+| **错误日志** | `.error-log` | 黑底 `#03060e`，橙色文字 `#ff9e6e` | 终端风格 |
+| **错误行** | `.error-line` | 左侧 2px 红色边框，橙红色文字 | 错误信息 |
+| **成功标签** | `.success-tag` | 绿色文字，上边框分隔 | 状态指示 |
+| **评论卡片** | `.comment` | 半透明深蓝底，左侧 5px cyan 边框，圆角28px | 用户评价 |
+| **闪烁文字** | `.blink-text` | animation: pulse 1.2s infinite | 动态强调 |
+
+#### 面板布局结构
+```
+.panel（面板容器）
+  └── .stat（统计单元）
+       ├── .number（数字，Orbitron）
+       └── .label（标签说明）
+```
+
+#### 按钮样式
+| 按钮 | class | 特征 |
+|------|-------|------|
+| 主按钮 | `.btn-primary` | 渐变 `#0ac8ff → #b62eff`，圆角40px，box-shadow 发光，hover 放大 |
+| 次按钮 | `.btn-secondary` | 半透明深蓝底，1px #3b82f6 边框 |
+| 轮廓按钮 | `.btn-outline-light` | 透明背景，1px cyan 边框，圆角40px |
+
+#### 动画效果
+- **脉冲动画** `.pulse`：
+  ```css
+  @keyframes pulse {
+    0% { opacity: 1; text-shadow: 0 0 0px cyan; }
+    50% { opacity: 0.7; text-shadow: 0 0 6px cyan; }
+    100% { opacity: 1; }
+  }
+  ```
+- **悬停效果** `.feature-card:hover`：上浮 6px + 发光边框
+
+#### 赛博朋克风组件映射（详细版）
+- 封面主标题 → `.display`（渐变 Orbitron）
+- 章节副标题 → `.subtitle`
+- 强调词/关键词 → `.highlight`（霓虹青发光）
+- 数据展示 → `.panel` > `.stat` > `.number` + `.label`
+- 标签/徽章 → `.badge` 或 inline `.tag`
+- 终端/代码风格 → `.error-log` > `.error-line`
+- 用户评价 → `.comment`（左侧 cyan 边框）
+- 盈利数据 → `.profit-badge`（金色渐变）
+- 按钮 → `.btn-primary` / `.btn-secondary`
+
+#### 生成赛博朋克风 PPT HTML 的 CSS 结构模板
+```css
+/* 必选：背景层 */
+.cyber-bg {
+  position: fixed;
+  top: 0; left: 0; width: 100%; height: 100%;
+  background-image: 
+    linear-gradient(#0af3 1px, transparent 1px),
+    linear-gradient(90deg, #0af3 1px, transparent 1px);
+  background-size: 50px 50px;
+  opacity: 0.12;
+  pointer-events: none;
+  z-index: 0;
+}
+.glow-gradient {
+  position: fixed;
+  top: -30%; left: -20%;
+  width: 140%; height: 140%;
+  background: radial-gradient(circle, rgba(0,255,255,0.15), rgba(255,0,255,0) 70%);
+  filter: blur(80px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* 幻灯片容器 */
+.slide {
+  position: relative;
+  width: 1280px;
+  height: 720px;
+  background: radial-gradient(circle at 10% 20%, #03050b, #000000);
+  color: #d8e7ff;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+}
+
+/* 面板卡片 */
+.panel {
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(12px);
+  border-radius: 32px;
+  border: 1px solid rgba(0, 255, 255, 0.4);
+  padding: 24px 32px;
+  box-shadow: 0 0 15px rgba(0, 180, 255, 0.2);
+}
+
+/* 高亮文字 */
+.highlight {
+  color: #0ff;
+  text-shadow: 0 0 6px cyan;
+}
+
+/* 统计数字 */
+.stat .number {
+  font-family: 'Orbitron', monospace;
+  font-size: 3rem;
+  font-weight: 800;
+  color: var(--cyan);
+}
+.stat .label {
+  font-size: 0.9rem;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+/* 页脚 */
+.footer {
+  position: absolute;
+  bottom: 20px;
+  left: 0; right: 0;
+  display: flex;
+  justify-content: space-between;
+  padding: 0 40px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.slide-time {
+  font-family: monospace;
+  color: var(--cyan);
+  letter-spacing: 1px;
+}
+```
 
 ## 生成流程
 
@@ -214,12 +374,16 @@ getCurrentTimeRange() {
 --title: 34px;     /* 中标题 */
 ```
 
-## 赛博朋克风关键变量
+## 赛博朋克风关键变量（速查）
 
 ```css
---bg: #060816;
---cyan: #00e5ff;
---pink: #ff2ea6;
---ink: #d8e7ff;
---muted: #6e7ea8;
+--bg: #060816;        /* 主背景：深邃蓝黑 */
+--cyan: #00e5ff;      /* 霓虹青 */
+--pink: #ff2ea6;      /* 霓虹粉 */
+--purple: #8b5cf6;    /* 紫色 */
+--gold: #f0a500;      /* 金色 */
+--ink: #d8e7ff;       /* 主文字 */
+--muted: #6e7ea8;     /* 次要文字 */
 ```
+
+> **详细组件说明见上方「赛博朋克风」章节**

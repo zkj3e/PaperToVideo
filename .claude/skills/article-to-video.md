@@ -185,13 +185,13 @@ with open('workspace/文章2/intro_result.json') as f:
 
 ### 第五步：将 HTML PPT 转换为视频
 
-使用 Pillow 渲染 HTML 为视频片段：
+使用 Playwright 浏览器渲染 HTML 为高质量视频片段：
 
 ```bash
-python3 scripts/render_slides.py "workspace/文章2/1-ppt.html" "workspace/文章2/ppt_frames"
+python3 scripts/render_slides_browser.py "workspace/文章2/1-ppt.html" "workspace/文章2/ppt_frames_browser"
 ```
 
-输出：`workspace/文章2/ppt_frames/slide_01.png` 等图片序列
+输出：`workspace/文章2/ppt_frames_browser/slide_01.png` 等图片序列
 
 ### 第六步：合成最终视频
 
@@ -236,7 +236,7 @@ workspace/文章2/
 ├── 数字人音频.flac                          # TTS完整音频
 ├── intro_result.json                        # RunningHub 结果
 ├── 1-ppt.html                              # PPT HTML 演示文稿
-├── ppt_frames/                             # PPT 幻灯片图片
+├── ppt_frames_browser/                      # PPT 幻灯片图片（浏览器渲染）
 │   └── slide_01.png
 ├── ppt_video/                              # PPT 视频
 │   └── ppt_body_raw.mp4
@@ -270,7 +270,7 @@ workspace/文章2/
 |------|------|
 | `scripts/runninghub_digital_human_complete.py` | RunningHub 数字人视频生成 |
 | `scripts/srt_to_text.py` | SRT 转纯文本 |
-| `scripts/render_slides.py` | HTML PPT 渲染为 PNG 幻灯片（Pillow） |
+| `scripts/render_slides_browser.py` | HTML PPT 渲染为 PNG 幻灯片（Playwright 浏览器） |
 
 ## 相关 Skill
 
