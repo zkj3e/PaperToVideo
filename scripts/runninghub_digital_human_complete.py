@@ -252,7 +252,7 @@ def main():
     parser.add_argument("--text", "-t", type=str, help="口播文本")
     parser.add_argument("--input", "-i", type=str, help="输入文件路径（文本文件）")
     parser.add_argument("--output", "-o", type=str, default="digital_human_result.json", help="输出文件路径")
-    parser.add_argument("--duration", "-d", type=str, default="00:05", help="视频时长 (mm:ss)，默认 00:05")
+    parser.add_argument("--duration", "-d", type=str, default="00:15", help="视频时长 (mm:ss)，默认 00:05")
     parser.add_argument("--image", type=str, default="", help="人物形象图片路径或 ID")
     parser.add_argument("--workflow-id", "-w", type=str, default="", help="RunningHub 工作流 ID")
     parser.add_argument("--api-key", "-k", type=str, default="", help="RunningHub API Key")

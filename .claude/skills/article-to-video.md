@@ -1,27 +1,37 @@
 ---
 name: article-to-video
-description: 完整流水线：文本 → RunningHub数字人+TTS配音 → PPT幻灯片 → 视频合成。默认包含数字人开头+音频+字幕，无需询问。
+description: 完整流水线：文本 → RunningHub数字人+音频+字幕 → 用字幕生成PPT幻灯片 → 视频合成。默认包含数字人开头+音频+字幕，无需询问。
 ---
 
 # article-to-video
 
-从纯文本或SRT字幕文件生成完整视频，默认包含 AI 数字人开头 + TTS配音 + PPT内容。
+从纯文本文件生成完整视频，默认包含 AI 数字人开头 + TTS配音 + PPT内容。
 
 **默认行为（无需询问用户）**：
-- 自动使用 RunningHub 生成数字人口播开头
-- 自动使用 RunningHub TTS 生成完整音频配音
-- 自动生成字幕
-- 自动生成 PPT 幻灯片并合成视频
+1. 自动使用 RunningHub 生成数字人口播视频 + TTS音频 + SRT字幕
+2. 用 SRT 字幕时间信息生成 PPT 幻灯片（带精确时间同步）
+3. 合成最终视频
 
 ## 流水线总览
 
 ```
-┌─────────────┐     ┌────────────────────────┐     ┌──────────────┐
-│  SRT 字幕    │ ──▶ │  RunningHub 数字人开头   │ ──▶ │  数字人视频   │
-│  (文案输入)  │     │  (AI数字人口播)           │     │  (intro.mp4) │
-└─────────────┘     └────────────────────────┘     └──────────────┘
-                                                              │
-                                                              ▼
+┌─────────────┐     ┌──────────────────────────────┐     ┌──────────────┐
+│  纯文本      │ ──▶ │  RunningHub 数字人+音频+字幕   │ ──▶ │  数字人视频   │
+│  (文案输入)  │     │  (AI数字人口播+SRT字幕)         │     │  (intro.mp4) │
+└─────────────┘     └──────────────────────────────┘     │  数字人音频   │
+                                                          │  (音频.flac)  │
+                                                          │  字幕文件     │
+                                                          │  (.srt)       │
+                                                          └──────────────┘
+                                                                 │
+                                                                 ▼
+                                                   ┌──────────────┐
+                                                   │  用字幕生成   │
+                                                   │  PPT HTML    │
+                                                   │  (带时间同步) │
+                                                   └──────────────┘
+                                                                 │
+                                                                 ▼
 ┌─────────────┐     ┌────────────────────────┐     ┌──────────────┐
 │  最终成片    │ ◀── │  音频合成 (ffmpeg)       │ ◀── │  PPT 视频    │
 │  (成片.mp4) │     │  (intro + ppt + audio)  │     │  (ppt.mp4)   │
@@ -39,7 +49,7 @@ description: 完整流水线：文本 → RunningHub数字人+TTS配音 → PPT�
 | 时间段 | 内容 |
 |--------|------|
 | 0s - N秒 | 数字人开头（AI数字人口播，时长由RunningHub决定） |
-| N秒后 | PPT内容（HTML 演示文稿渲染的视频） |
+| N秒后 | PPT内容（HTML 演示文稿渲染的视频，与字幕时间同步） |
 
 ## 前置检查
 
@@ -72,7 +82,7 @@ cp scripts/.runninghub_config.json.example scripts/.runninghub_config.json
   "api_key": "你的API Key",
   "api_url": "https://www.runninghub.ai/openapi/v2/run/ai-app/{workflow_id}",
   "query_url": "https://www.runninghub.ai/openapi/v2/run/query",
-  "workflow_id": "46034836c9eb4e5297b7eb38e0355601",
+  "workflow_id": "2059642920948559873",
   "instance_type": "default",
   "use_personal_queue": false,
   "poll": true,
@@ -99,29 +109,15 @@ pip install Pillow
 
 | 文件 | 说明 |
 |------|------|
-| `xxx.txt` 或 `xxx.srt` | 初期文案（用于生成 PPT 内容） |
-| RunningHub 生成的字幕 | 真实语音字幕（用于最终视频字幕合成） |
+| `xxx.txt` | 文案文件（用于 RunningHub 生成数字人+音频+字幕） |
 
-**说明**：初期文案用于生成 PPT 内容；最终视频字幕由 RunningHub 根据真实语音自动生成。
+**流程说明**：先用文案调用 RunningHub 生成数字人口播视频、TTS音频和SRT字幕；然后用 SRT 字幕的时间信息来生成 PPT，每页幻灯片的时间范围与字幕时间同步。
 
 ## 执行流程
 
-### 第一步：准备文案
+### 第一步：生成 RunningHub 数字人开头 + TTS音频 + SRT字幕
 
-如果只有纯文本文件，直接使用即可：
-```bash
-# 文本文件路径
-TEXT_FILE="workspace/文章2/1.txt"
-```
-
-如果需要从 SRT 提取纯文本：
-```bash
-python3 scripts/srt_to_text.py "workspace/文章1/你的字幕.srt"
-```
-
-### 第二步：生成 RunningHub 数字人开头 + TTS音频
-
-使用完整文案生成数字人口播视频和TTS配音：
+使用完整文案生成数字人口播视频、TTS配音和SRT字幕：
 
 ```bash
 python3 scripts/runninghub_digital_human_complete.py \
@@ -138,11 +134,12 @@ python3 scripts/runninghub_digital_human_complete.py \
 脚本会自动：
 1. 调用 RunningHub 数字人API生成口播视频
 2. 调用 RunningHub TTS生成完整音频
-3. 轮询任务状态直到完成
+3. 调用 RunningHub 生成 SRT 字幕文件
+4. 轮询任务状态直到完成
 
-### 第三步：下载数字人视频和音频
+### 第三步：下载数字人视频、音频和字幕
 
-任务完成后，从结果 JSON 获取视频和音频 URL 并下载：
+任务完成后，从结果 JSON 获取视频、音频和字幕 URL 并下载：
 
 **从 JSON 提取 URL**
 
@@ -157,43 +154,47 @@ with open('workspace/文章2/intro_result.json') as f:
         # 检查是否有音频
         if len(results) > 1:
             print('Audio URL:', results[1].get('url', 'No Audio found'))
+        # 检查是否有字幕
+        if len(results) > 2:
+            print('Subtitle URL:', results[2].get('url', 'No Subtitle found'))
     else:
         print('No results yet, check task status')
 "
 ```
 
-**下载视频和音频**
+**下载视频、音频和字幕**
 1. 打开 [RunningHub 控制台](https://www.runninghub.ai)
 2. 进入「调用记录」查看任务
-3. 下载数字人口播视频和TTS音频
+3. 下载数字人口播视频、TTS音频和SRT字幕文件
 
-**视频命名**：
+**文件命名**：
 - 数字人口播视频：`workspace/文章2/数字人开头.mp4`
 - TTS配音音频：`workspace/文章2/数字人音频.flac`
+- SRT字幕文件：`workspace/文章2/字幕.srt`
 
-### 第四步：生成 PPT 幻灯片
+### 第四步：用 SRT 字幕生成 PPT 幻灯片
 
-使用 `srt-to-ppt-html` skill 将文本内容转换为 PPT 风格的 HTML 演示文稿：
+使用 `srt-to-ppt-html` skill 将 SRT 字幕转换为 PPT 风格的 HTML 演示文稿：
 
-1. 解析文本文件，按语义分组为多页幻灯片
-2. 默认使用主题风格：`cyberpunk`（赛博朋克风）
-3. 生成 HTML 文件，每页记录对应字幕的时间范围（`data-time-start` / `data-time-end`）
+1. 解析 SRT 字幕文件，按语义分组为多页幻灯片
+2. 每页幻灯片使用字幕的时间范围（`data-time-start` / `data-time-end`）
+3. 默认使用主题风格：`cyberpunk`（赛博朋克风）
 
-**示例**：把 `workspace/文章2/1.txt` 做成赛博朋克风 PPT，生成约 10 页。
+**示例**：把 `workspace/文章2/字幕.srt` 做成赛博朋克风 PPT，生成约 10 页。
 
-输出：`workspace/文章2/1-ppt.html`
+输出：`workspace/文章2/字幕-ppt.html`
 
 ### 第五步：将 HTML PPT 转换为视频
 
 使用 Playwright 浏览器渲染 HTML 为高质量视频片段：
 
 ```bash
-python3 scripts/render_slides_browser.py "workspace/文章2/1-ppt.html" "workspace/文章2/ppt_frames_browser"
+python3 scripts/render_slides_browser.py "workspace/文章2/字幕-ppt.html" "workspace/文章2/ppt_frames_browser"
 ```
 
 输出：`workspace/文章2/ppt_frames_browser/slide_01.png` 等图片序列
 
-### 第六步：合成最终视频
+### 第五步：合成最终视频
 
 ```bash
 cd workspace/文章2
@@ -215,6 +216,13 @@ ffmpeg -hide_banner -y \
   -c:v copy -c:a aac -b:a 192k \
   -shortest \
   "最终成片.mp4"
+
+# 3. 可选：烧录字幕
+ffmpeg -hide_banner -y \
+  -i "最终成片.mp4" \
+  -i "字幕.srt" \
+  -c copy -c:s ass \
+  "最终成片_带字幕.mp4"
 ```
 
 ## 输出规格
@@ -231,11 +239,12 @@ ffmpeg -hide_banner -y \
 
 ```
 workspace/文章2/
-├── 1.txt                                    # 原始文本文件
+├── 1.txt                                    # 原始文案文件
 ├── 数字人开头.mp4                          # 数字人视频
 ├── 数字人音频.flac                          # TTS完整音频
+├── 字幕.srt                                # SRT字幕文件（由RunningHub生成）
 ├── intro_result.json                        # RunningHub 结果
-├── 1-ppt.html                              # PPT HTML 演示文稿
+├── 字幕-ppt.html                           # PPT HTML 演示文稿（用字幕时间生成）
 ├── ppt_frames_browser/                      # PPT 幻灯片图片（浏览器渲染）
 │   └── slide_01.png
 ├── ppt_video/                              # PPT 视频
