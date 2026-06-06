@@ -314,26 +314,62 @@ def main():
         use_personal_queue=cfg["use_personal_queue"]
     )
 
-    print("📤 正在提交任务...")
-    task_id = api.submit_task(text, args.duration, cfg["image"])
+    # 检查是否有正在运行的旧任务
+    existing_task_id = None
+    if Path(output_file).exists():
+        try:
+            with open(output_file, 'r', encoding='utf-8') as f:
+                existing = json.load(f)
+                old_task_id = existing.get("taskId")
+                if old_task_id:
+                    # 查询旧任务状态
+                    api_check = RunningHubComplete(
+                        api_url=cfg["api_url"],
+                        query_url=cfg["query_url"],
+                        api_key=cfg["api_key"],
+                        instance_type=cfg["instance_type"],
+                        use_personal_queue=cfg["use_personal_queue"]
+                    )
+                    old_result = api_check.query_task(old_task_id)
+                    old_status = old_result.get("status") if old_result else None
+                    if old_status in ("RUNNING", "QUEUED", "PROCESSING", "SUBMITTED"):
+                        existing_task_id = old_task_id
+                        print(f"♻️  发现正在运行的任务: {old_task_id} (状态: {old_status})")
+                        print(f"\n💡 取消任务命令:")
+                        print(f"   python3 scripts/runninghub_cancel_task.py {old_task_id}")
+                    elif old_status == "SUCCESS":
+                        print(f"✅ 任务已完成: {old_task_id}")
+                        print(f"📋 结果文件: {output_file}")
+                        return
+        except Exception:
+            pass
 
-    if not task_id:
-        print("❌ 任务提交失败，请检查配置和网络连接", file=sys.stderr)
-        sys.exit(1)
+    if not existing_task_id:
+        # 没有正在运行的旧任务，提交新任务
+        print("📤 正在提交任务...")
+        task_id = api.submit_task(text, args.duration, cfg["image"])
 
-    print(f"✅ 任务已提交，任务ID: {task_id}")
-    print(f"🔗 任务地址: https://www.runninghub.ai/call-api/bill-task")
-    print(f"💡 可在 https://www.runninghub.ai/call-api/bill-task 查看任务状态")
+        if not task_id:
+            print("❌ 任务提交失败，请检查配置和网络连接", file=sys.stderr)
+            sys.exit(1)
 
-    # 立即创建输出文件记录任务ID
-    with open(output_file, 'w', encoding='utf-8') as f:
-        json.dump({"taskId": task_id, "status": "SUBMITTED"}, f, ensure_ascii=False, indent=2)
-    print(f"💾 任务ID已保存: {output_file}")
+        print(f"✅ 任务已提交，任务ID: {task_id}")
+        print(f"🔗 任务地址: https://www.runninghub.ai/call-api/bill-task")
+        print(f"💡 可在 https://www.runninghub.ai/call-api/bill-task 查看任务状态")
+
+        # 立即创建输出文件记录任务ID
+        with open(output_file, 'w', encoding='utf-8') as f:
+            json.dump({"taskId": task_id, "status": "SUBMITTED"}, f, ensure_ascii=False, indent=2)
+        print(f"💾 任务ID已保存: {output_file}")
+
+        task_id_to_wait = task_id
+    else:
+        task_id_to_wait = existing_task_id
 
     print(f"🔄 等待任务完成（轮询间隔: {cfg['poll_interval']}秒）...\n")
 
     result = api.wait_for_result(
-        task_id,
+        task_id_to_wait,
         poll_interval=cfg["poll_interval"],
         max_wait=cfg["max_wait"],
         output_file=cfg["output"]
