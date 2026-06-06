@@ -5,9 +5,9 @@ RunningHub 数字人口播完整流程脚本
 包含进度显示、状态更新和时间统计
 
 用法:
-    python3 scripts/runninghub_digital_human_complete.py --text "口播文本" --duration "00:05"
-    python3 scripts/runninghub_digital_human_complete.py --text "文本" --image "image.png" --duration "00:30"
-    python3 scripts/runninghub_digital_human_complete.py --input "script.txt" --duration "00:30"
+    python3 scripts/runninghub_digital_human_complete.py workspace/文章1/1.txt
+    python3 scripts/runninghub_digital_human_complete.py workspace/文章1/1.txt --duration 00:30
+    python3 scripts/runninghub_digital_human_complete.py workspace/文章1/1.txt -o workspace/文章1/result.json
 """
 
 import argparse
@@ -249,10 +249,9 @@ class RunningHubComplete:
 
 def main():
     parser = argparse.ArgumentParser(description="RunningHub 数字人口播完整流程")
-    parser.add_argument("--text", "-t", type=str, help="口播文本")
-    parser.add_argument("--input", "-i", type=str, help="输入文件路径（文本文件）")
-    parser.add_argument("--output", "-o", type=str, default="digital_human_result.json", help="输出文件路径")
-    parser.add_argument("--duration", "-d", type=str, default="00:15", help="视频时长 (mm:ss)，默认 00:05")
+    parser.add_argument("input", type=str, help="输入文本文件路径")
+    parser.add_argument("--output", "-o", type=str, default="", help="输出文件路径（默认在工作区生成 intro_result.json）")
+    parser.add_argument("--duration", "-d", type=str, default="00:15", help="视频时长 (mm:ss)，默认 00:15")
     parser.add_argument("--image", type=str, default="", help="人物形象图片路径或 ID")
     parser.add_argument("--workflow-id", "-w", type=str, default="", help="RunningHub 工作流 ID")
     parser.add_argument("--api-key", "-k", type=str, default="", help="RunningHub API Key")
@@ -267,38 +266,41 @@ def main():
 
     args = parser.parse_args()
 
-    if not args.text and not args.input:
-        parser.print_help()
-        print("\n❌ 错误: 必须提供 --text 或 --input 参数")
+    # 工作区是 input 的父目录
+    input_path = Path(args.input)
+    workspace = input_path.parent.resolve()
+    if not input_path.exists():
+        print(f"❌ 错误: 输入文件不存在: {input_path}", file=sys.stderr)
         sys.exit(1)
 
-    if args.input:
-        input_path = Path(args.input)
-        if not input_path.exists():
-            print(f"❌ 错误: 输入文件不存在: {input_path}", file=sys.stderr)
-            sys.exit(1)
-        text = input_path.read_text(encoding="utf-8")
-    else:
-        text = args.text
-
-    text = text.strip()
+    text = input_path.read_text(encoding="utf-8").strip()
     if not text:
         print("❌ 错误: 输入文本为空", file=sys.stderr)
         sys.exit(1)
+
+    # output 默认在工作区生成 intro_result.json
+    if args.output:
+        output_file = args.output
+    else:
+        output_file = str(workspace / "intro_result.json")
 
     total_start = time.time()
 
     print(f"\n{'='*60}")
     print(f"🚀 RunningHub 数字人口播生成器")
     print(f"{'='*60}")
+    print(f"📂 工作区: {workspace}")
     print(f"📝 文本长度: {len(text)} 字符")
+    print(f"📄 文本内容:\n{text[:500]}{'...' if len(text) > 500 else ''}")
     print(f"⏱️  目标时长: {args.duration}")
     if args.image:
         print(f"🖼️  人物图片: {args.image}")
+    print(f"💾 输出文件: {output_file}")
     print(f"{'='*60}\n")
 
     config = load_config(args.config) if args.config else load_config()
     cfg = merge_config(config, args)
+    cfg["output"] = output_file  # 使用计算后的 output_file
 
     if not cfg["api_key"]:
         print("❌ 错误: 未找到 API Key，请通过 --api-key 或配置文件提供", file=sys.stderr)
@@ -320,6 +322,14 @@ def main():
         sys.exit(1)
 
     print(f"✅ 任务已提交，任务ID: {task_id}")
+    print(f"🔗 任务地址: https://www.runninghub.ai/call-api/bill-task")
+    print(f"💡 可在 https://www.runninghub.ai/call-api/bill-task 查看任务状态")
+
+    # 立即创建输出文件记录任务ID
+    with open(output_file, 'w', encoding='utf-8') as f:
+        json.dump({"taskId": task_id, "status": "SUBMITTED"}, f, ensure_ascii=False, indent=2)
+    print(f"💾 任务ID已保存: {output_file}")
+
     print(f"🔄 等待任务完成（轮询间隔: {cfg['poll_interval']}秒）...\n")
 
     result = api.wait_for_result(
