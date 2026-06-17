@@ -77,3 +77,4 @@ pip install -r requirements.txt
 - [article-to-video skill](.claude/skills/article-to-video.md) - 完整的视频生成流程指南
 - [runninghub-digital-human skill](.claude/skills/runninghub-digital-human.md) - RunningHub 数字人使用指南
 - [srt-to-ppt-html skill](.claude/skills/srt-to-ppt-html/) - SRT 转 PPT HTML 指南
+- [srt-to-article skill](.claude/skills/srt-to-article/) - SRT 字幕转文章文本

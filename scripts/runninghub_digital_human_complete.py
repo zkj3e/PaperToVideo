@@ -262,7 +262,7 @@ def main():
     parser.add_argument("--use-personal-queue", action="store_true", help="使用个人独占队列")
     parser.add_argument("--config", "-c", type=str, default="", help="配置文件路径")
     parser.add_argument("--poll-interval", type=int, default=15, help="轮询间隔（秒），默认 15")
-    parser.add_argument("--max-wait", type=int, default=600, help="最大等待时间（秒）")
+    parser.add_argument("--max-wait", type=int, default=3600, help="最大等待时间（秒）")
 
     args = parser.parse_args()
 
