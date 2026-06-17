@@ -21,8 +21,8 @@ from pathlib import Path
 from typing import Optional
 
 DEFAULT_WORKFLOW_ID = "2059642920948559873"
-DEFAULT_API_URL = "https://www.runninghub.ai/openapi/v2/run/ai-app/{workflow_id}"
-DEFAULT_QUERY_URL = "https://www.runninghub.ai/openapi/v2/query"
+DEFAULT_API_URL = "https://www.runninghub.cn/openapi/v2/run/ai-app/{workflow_id}"
+DEFAULT_QUERY_URL = "https://www.runninghub.cn/openapi/v2/query"
 DEFAULT_CONFIG_FILE = ".runninghub_config.json"
 
 
@@ -58,7 +58,7 @@ def merge_config(config: dict, args: argparse.Namespace) -> dict:
         "use_personal_queue": args.use_personal_queue or config.get("use_personal_queue", True),
         "image": args.image or config.get("image", ""),
         "poll_interval": args.poll_interval or config.get("poll_interval", 15),
-        "max_wait": args.max_wait or config.get("max_wait", 600),
+        "max_wait": args.max_wait or config.get("max_wait", 1800),
         "output": args.output or config.get("output", "digital_human_result.json"),
     }
 
@@ -168,7 +168,7 @@ class RunningHubComplete:
             return None
 
     def wait_for_result(self, task_id: str, poll_interval: int = 3,
-                        max_wait: int = 600, output_file: str = None) -> dict:
+                        max_wait: int = 1800, output_file: str = None) -> dict:
         progress = ProgressDisplay(max_wait)
         progress_thread = threading.Thread(target=progress.display_loop, daemon=True)
         progress_thread.start()
@@ -354,8 +354,8 @@ def main():
             sys.exit(1)
 
         print(f"✅ 任务已提交，任务ID: {task_id}")
-        print(f"🔗 任务地址: https://www.runninghub.ai/call-api/bill-task")
-        print(f"💡 可在 https://www.runninghub.ai/call-api/bill-task 查看任务状态")
+        print(f"🔗 任务地址: https://www.runninghub.cn/call-api/bill-task")
+        print(f"💡 可在 https://www.runninghub.cn/call-api/bill-task 查看任务状态")
 
         # 立即创建输出文件记录任务ID
         with open(output_file, 'w', encoding='utf-8') as f:

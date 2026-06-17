@@ -79,19 +79,22 @@ cp scripts/.runninghub_config.json.example scripts/.runninghub_config.json
 
 ```json
 {
-  "api_key": "你的API Key",
-  "api_url": "https://www.runninghub.ai/openapi/v2/run/ai-app/{workflow_id}",
-  "query_url": "https://www.runninghub.ai/openapi/v2/run/query",
+  "api_key": "你的RunningHub API Key",
+  "deepseek_api_key": "你的DeepSeek API Key",
+  "api_url": "https://www.runninghub.cn/openapi/v2/run/ai-app/{workflow_id}",
+  "query_url": "https://www.runninghub.cn/openapi/v2/query",
   "workflow_id": "2059642920948559873",
   "instance_type": "default",
   "use_personal_queue": false,
   "poll": true,
   "poll_interval": 15,
-  "max_wait": 600
+  "max_wait": 1800
 }
 ```
 
-**获取 API Key**: [RunningHub API 密钥页面](https://www.runninghub.ai/enterprise-api/consumerApi) → 创建 API Key
+**获取 API Key**:
+- RunningHub: [RunningHub API 密钥页面](https://www.runninghub.cn/enterprise-api/consumerApi) → 创建 API Key
+- DeepSeek: [DeepSeek API 平台](https://platform.deepseek.com/) → API Keys → 创建
 
 ### 2. 系统依赖
 
@@ -122,7 +125,7 @@ pip install Pillow
 ```bash
 python3 scripts/runninghub_digital_human_complete.py \
   --text "$(cat workspace/文章2/1.txt)" \
-  --duration "00:15" \
+  --duration "00:10" \
   --output "workspace/文章2/intro_result.json"
 ```
 
@@ -163,7 +166,7 @@ with open('workspace/文章2/intro_result.json') as f:
 ```
 
 **下载视频、音频和字幕**
-1. 打开 [RunningHub 控制台](https://www.runninghub.ai)
+1. 打开 [RunningHub 控制台](https://www.runninghub.cn)
 2. 进入「调用记录」查看任务
 3. 下载数字人口播视频、TTS音频和SRT字幕文件
 
@@ -172,38 +175,63 @@ with open('workspace/文章2/intro_result.json') as f:
 - TTS配音音频：`workspace/文章2/数字人音频.flac`
 - SRT字幕文件：`workspace/文章2/字幕.srt`
 
-### 第四步：用 SRT 字幕生成 PPT 幻灯片
+### 第四步：用文章生成 PPT 幻灯片
 
-使用 `srt-to-ppt-html` skill 将 SRT 字幕转换为 PPT 风格的 HTML 演示文稿：
+根据音频时长计算 PPT 页数（每分钟 4 页），然后使用 DeepSeek AI 生成赛博朋克风格的 PPT：
 
-1. 解析 SRT 字幕文件，按语义分组为多页幻灯片
-2. 每页幻灯片使用字幕的时间范围（`data-time-start` / `data-time-end`）
-3. 默认使用主题风格：`cyberpunk`（赛博朋克风）
+```bash
+python3 scripts/generate_ppt.py "workspace/文章2/1.txt" "workspace/文章2/数字人音频.flac"
+```
 
-**示例**：把 `workspace/文章2/字幕.srt` 做成赛博朋克风 PPT，生成约 10 页。
+**参数说明**：
+- 第一个参数：原始文案文本文件路径
+- 第二个参数：音频文件路径（用于计算时长）
+- 页数计算：每分钟 4 页（自动根据音频时长计算）
 
-输出：`workspace/文章2/字幕-ppt.html`
+输出：`workspace/文章2/1.html`
 
 ### 第五步：将 HTML PPT 转换为视频
 
-使用 Playwright 浏览器渲染 HTML 为高质量视频片段：
+使用 Playwright 浏览器渲染 HTML 为高质量 PNG 序列，然后生成与音频时长匹配的 PPT 视频：
 
 ```bash
-python3 scripts/render_slides_browser.py "workspace/文章2/字幕-ppt.html" "workspace/文章2/ppt_frames_browser"
+python3 scripts/render_slides_browser.py "workspace/文章2/字幕文本.html" "workspace/文章2/ppt_frames_browser"
 ```
 
 输出：`workspace/文章2/ppt_frames_browser/slide_01.png` 等图片序列
 
-### 第五步：合成最终视频
+### 第六步：生成 PPT 视频（均分时长）
+
+根据音频时长计算每张幻灯片的显示时长，生成与音频同步的视频：
+
+```bash
+python3 scripts/build_ppt_video.py "workspace/文章2/ppt_frames_browser" "workspace/文章2/数字人音频.flac" "workspace/文章2/ppt_video"
+```
+
+**参数说明**：
+- 第一个参数：PNG 图片序列目录
+- 第二个参数：音频文件（用于计算总时长）
+- 第三个参数：输出目录
+- 每张幻灯片时长 = 音频总时长 / 幻灯片数量
+
+输出：`workspace/文章2/ppt_video/segment_01.mp4` 等片段
+
+### 第七步：合成最终视频
 
 ```bash
 cd workspace/文章2
 
 # 1. 合并数字人开头 + PPT 视频
+python3 -c "
+with open('concat.txt', 'w') as f:
+    for i in range(1, 26):
+        f.write(f\"file 'ppt_video/segment_{i:02d}.mp4'\n\")
+"
+
 ffmpeg -hide_banner -y \
   -i "数字人开头.mp4" \
-  -i "ppt_video/ppt_body_raw.mp4" \
-  -filter_complex "[0:v]scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2,setsar=1[v0];[1:v]scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2,setsar=1[v1];[v0][v1]concat=n=2:v=1:a=0[out]" \
+  -f concat -safe 0 -i "concat.txt" \
+  -filter_complex "[0:v]scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2,setsar=1[v0];[v0][1:v]concat=n=2:v=1:a=0[out]" \
   -map "[out]" \
   -c:v libx264 -preset fast -crf 20 \
   "成片_无音频.mp4"
@@ -244,11 +272,12 @@ workspace/文章2/
 ├── 数字人音频.flac                          # TTS完整音频
 ├── 字幕.srt                                # SRT字幕文件（由RunningHub生成）
 ├── intro_result.json                        # RunningHub 结果
-├── 字幕-ppt.html                           # PPT HTML 演示文稿（用字幕时间生成）
+├── 字幕文本.html                           # PPT HTML 演示文稿（DeepSeek AI 生成）
 ├── ppt_frames_browser/                      # PPT 幻灯片图片（浏览器渲染）
 │   └── slide_01.png
 ├── ppt_video/                              # PPT 视频
-│   └── ppt_body_raw.mp4
+│   └── segment_01.mp4                     # 视频片段（均分时长）
+├── concat.txt                             # ffmpeg 拼接列表
 ├── 成片_无音频.mp4                         # 合并后无音频视频
 └── 最终成片.mp4                            # 最终成片
 ```
@@ -259,7 +288,7 @@ workspace/文章2/
 
 **错误码 1001 (Invalid URL)**
 - 检查 `scripts/.runninghub_config.json` 中的 `query_url`
-- 正确值：`https://www.runninghub.ai/openapi/v2/query`
+- 正确值：`https://www.runninghub.cn/openapi/v2/query`
 
 **任务状态未更新**
 - 使用 `--poll_interval 5` 缩短轮询间隔
@@ -278,8 +307,9 @@ workspace/文章2/
 | 脚本 | 用途 |
 |------|------|
 | `scripts/runninghub_digital_human_complete.py` | RunningHub 数字人视频生成 |
-| `scripts/srt_to_text.py` | SRT 转纯文本 |
+| `scripts/generate_ppt.py` | DeepSeek AI 生成赛博朋克风格 PPT HTML |
 | `scripts/render_slides_browser.py` | HTML PPT 渲染为 PNG 幻灯片（Playwright 浏览器） |
+| `scripts/build_ppt_video.py` | PNG 序列生成均分时长的 PPT 视频 |
 
 ## 相关 Skill
 

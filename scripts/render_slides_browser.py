@@ -54,12 +54,16 @@ def parse_slide_timings_from_html(html_path: Path):
     return timings
 
 def count_slides(html_path: Path) -> int:
-    content = html_path.read_text(encoding="utf-8", errors="replace")
-    tag_pattern = re.compile(
-        r'<(?:div|section)\b[^>]*\bclass\s*=\s*"[^"]*\bslide\b(?!-)[^"]*"[^>]*>',
-        re.IGNORECASE,
-    )
-    return len(tag_pattern.findall(content))
+    """通过 Playwright 执行 JavaScript 获取幻灯片数量"""
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True, args=['--no-sandbox', '--disable-setuid-sandbox'])
+        page = browser.new_page(viewport={"width": WIDTH, "height": HEIGHT})
+        page.goto(f"file://{html_path.resolve()}", wait_until="networkidle", timeout=30000)
+        page.wait_for_timeout(2000)
+        # 通过 JavaScript 获取幻灯片数量
+        total = page.evaluate("() => document.querySelectorAll('.slide').length")
+        browser.close()
+        return total
 
 def render_html_to_images(html_path: Path, output_dir: Path, viewport_size=(WIDTH, HEIGHT)):
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -67,10 +71,6 @@ def render_html_to_images(html_path: Path, output_dir: Path, viewport_size=(WIDT
     output_dir = output_dir.resolve()
 
     timings = parse_slide_timings_from_html(html_path)
-    total_slides = count_slides(html_path)
-
-    print(f"检测到 {total_slides} 张幻灯片")
-    print(f"时间信息: {timings}")
 
     with sync_playwright() as p:
         browser = p.chromium.launch(
@@ -85,28 +85,40 @@ def render_html_to_images(html_path: Path, output_dir: Path, viewport_size=(WIDT
         page = browser.new_page(viewport={"width": WIDTH, "height": HEIGHT})
         page.set_viewport_size({"width": WIDTH, "height": HEIGHT})
 
-        page.goto(f"file://{html_path}", wait_until="networkidle", timeout=30000)
-        page.wait_for_timeout(2000)
+        page.goto(f"file://{html_path}", wait_until="networkidle", timeout=60000)
+        # 等待JavaScript动态生成幻灯片完成
+        page.wait_for_timeout(5000)
+
+        # 从当前页面获取幻灯片数量
+        total_slides = page.evaluate("() => document.querySelectorAll('.slide').length")
+        print(f"检测到 {total_slides} 张幻灯片")
+        print(f"时间信息: {timings}")
 
         for i in range(1, total_slides + 1):
             slide_idx = i - 1
 
-            page.evaluate("""
-                () => {
-                    const slides = document.querySelectorAll('.slide');
-                    slides.forEach((s, idx) => {
-                        s.classList.remove('active');
-                        s.classList.remove('target');
-                        if (idx === %d) {
-                            s.classList.add('active');
-                            s.classList.add('target');
-                        }
-                    });
-                    document.body.classList.add('export-mode');
-                }
-            """ % slide_idx)
+            # 调用JavaScript的goTo函数来切换幻灯片
+            page.evaluate(f"""
+                () => {{
+                    if (typeof goTo === 'function') {{
+                        goTo({slide_idx});
+                    }} else {{
+                        // 如果goTo不可用，直接设置transform
+                        const wrapper = document.querySelector('.slides');
+                        if (wrapper) {{
+                            wrapper.style.transform = `translateX(-${{{slide_idx} * 100}}%)`;
+                        }}
+                        // 更新dots
+                        const dots = document.querySelectorAll('.dot');
+                        dots.forEach((d, idx) => {{
+                            d.classList.toggle('active', idx === {slide_idx});
+                        }});
+                    }}
+                }}
+            """)
 
-            page.wait_for_timeout(500)
+            # 等待transform动画完成
+            page.wait_for_timeout(800)
 
             slide_path = output_dir / f"slide_{i:02d}.png"
             page.screenshot(
